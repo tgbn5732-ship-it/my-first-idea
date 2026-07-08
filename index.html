@@ -68,11 +68,8 @@
             font-size: 16px;
             font-weight: 600;
             color: #ffffff;
-            /* 눈에 잘 띄는 세련된 파란색 그라데이션 적용 */
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             border: none;
             border-radius: 12px;
-            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25);
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             font-family: inherit;
@@ -81,13 +78,62 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.35);
-            background: linear-gradient(135deg, #2563eb, #1e40af);
         }
 
         .btn:active {
             transform: translateY(0);
+        }
+
+        /* [파란색 버튼] 오늘도 힘내세요! */
+        .btn.blue {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25);
+        }
+        .btn.blue:hover {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.35);
+        }
+        .btn.blue:active {
             box-shadow: 0 3px 10px 0 rgba(37, 99, 235, 0.2);
+        }
+
+        /* [노란색 버튼] 오늘도 해냈어요! */
+        .btn.yellow {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            box-shadow: 0 4px 14px 0 rgba(217, 119, 6, 0.25);
+        }
+        .btn.yellow:hover {
+            background: linear-gradient(135deg, #f59e0b, #b45309);
+            box-shadow: 0 6px 20px 0 rgba(217, 119, 6, 0.35);
+        }
+        .btn.yellow:active {
+            box-shadow: 0 3px 10px 0 rgba(217, 119, 6, 0.2);
+        }
+
+        /* [주황색 버튼] 조금씩 나아지고 있어요. */
+        .btn.orange {
+            background: linear-gradient(135deg, #ff7e40, #ea580c);
+            box-shadow: 0 4px 14px 0 rgba(234, 88, 12, 0.25);
+        }
+        .btn.orange:hover {
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+            box-shadow: 0 6px 20px 0 rgba(234, 88, 12, 0.35);
+        }
+        .btn.orange:active {
+            box-shadow: 0 3px 10px 0 rgba(234, 88, 12, 0.2);
+        }
+
+        /* [초록색 버튼] 이대로 계속 가 봅시다. */
+        .btn.green {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 4px 14px 0 rgba(5, 150, 105, 0.25);
+        }
+        .btn.green:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 6px 20px 0 rgba(5, 150, 105, 0.35);
+        }
+        .btn.green:active {
+            box-shadow: 0 3px 10px 0 rgba(5, 150, 105, 0.2);
         }
 
         @keyframes floatUp {
@@ -102,7 +148,7 @@
 <body>
     <div class="container">
         <h1 id="sentence">오늘도 힘내세요!</h1>
-        <button class="btn" id="next-btn">다음 문장 보기</button>
+        <button class="btn blue" id="next-btn">다음 문장 보기</button>
     </div>
 
     <script>
@@ -117,6 +163,8 @@
         const sentenceElement = document.getElementById('sentence');
         const buttonElement = document.getElementById('next-btn');
 
+        const buttonClasses = ['blue', 'yellow', 'orange', 'green'];
+
         buttonElement.addEventListener('click', () => {
             // 다음 문장 인덱스 계산 (0 -> 1 -> 2 -> 3 -> 0)
             currentIndex = (currentIndex + 1) % sentences.length;
@@ -126,11 +174,14 @@
             sentenceElement.style.transform = 'scale(0.95)';
             sentenceElement.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
 
-            // 효과가 끝난 시점에 글자를 바꾸고 다시 나타나게 함
+            // 효과가 끝난 시점에 글자와 버튼 색상을 바꾸고 다시 나타나게 함
             setTimeout(() => {
                 sentenceElement.textContent = sentences[currentIndex];
                 sentenceElement.style.opacity = '1';
                 sentenceElement.style.transform = 'scale(1)';
+                
+                // 버튼 클래스를 인덱스에 맞추어 변경 (색상 교체)
+                buttonElement.className = 'btn ' + buttonClasses[currentIndex];
             }, 150);
         });
     </script>
