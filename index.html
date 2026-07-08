@@ -101,9 +101,39 @@
 
 <body>
     <div class="container">
-        <h1>오늘도 힘내세요!</h1>
-        <button class="btn">다음 문장 보기</button>
+        <h1 id="sentence">오늘도 힘내세요!</h1>
+        <button class="btn" id="next-btn">다음 문장 보기</button>
     </div>
+
+    <script>
+        const sentences = [
+            "오늘도 힘내세요!",
+            "오늘도 해냈어요!",
+            "조금씩 나아지고 있어요.",
+            "이대로 계속 가 봅시다."
+        ];
+        let currentIndex = 0;
+
+        const sentenceElement = document.getElementById('sentence');
+        const buttonElement = document.getElementById('next-btn');
+
+        buttonElement.addEventListener('click', () => {
+            // 다음 문장 인덱스 계산 (0 -> 1 -> 2 -> 3 -> 0)
+            currentIndex = (currentIndex + 1) % sentences.length;
+
+            // 부드럽게 작아지면서 사라지는 효과
+            sentenceElement.style.opacity = '0';
+            sentenceElement.style.transform = 'scale(0.95)';
+            sentenceElement.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+
+            // 효과가 끝난 시점에 글자를 바꾸고 다시 나타나게 함
+            setTimeout(() => {
+                sentenceElement.textContent = sentences[currentIndex];
+                sentenceElement.style.opacity = '1';
+                sentenceElement.style.transform = 'scale(1)';
+            }, 150);
+        });
+    </script>
 </body>
 
 </html>
