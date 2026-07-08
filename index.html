@@ -19,22 +19,22 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 파란색 테마에 어울리는 깊고 세련된 다크 블루 배경 */
-            background: linear-gradient(135deg, #0b1120, #172554, #1e3a8a);
-            color: white;
+            /* 밝고 고급스러운 회색 그라데이션 배경 */
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9, #e2e8f0);
+            color: #1e293b;
             overflow: hidden;
         }
 
         .container {
             text-align: center;
             padding: 50px 100px;
-            /* Glassmorphism (유리 질감) 효과 */
-            background: rgba(255, 255, 255, 0.05);
+            /* 밝은 배경에 어울리는 투명한 화이트 유리 질감 효과 */
+            background: rgba(255, 255, 255, 0.45);
             border-radius: 24px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px 0 rgba(148, 163, 184, 0.12);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             transition: all 0.4s ease;
             /* 페이지 로드 시 나타나는 애니메이션 */
             animation: floatUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
@@ -44,9 +44,9 @@
 
         .container:hover {
             transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 15px 45px 0 rgba(0, 0, 0, 0.5);
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 50px 0 rgba(148, 163, 184, 0.22);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.8);
         }
 
         h1 {
@@ -54,9 +54,11 @@
             font-weight: 700;
             margin: 0;
             letter-spacing: -0.03em;
-            /* 맑은 화이트 톤 색상 적용 */
-            color: #ffffff;
-            text-shadow: 0px 4px 15px rgba(255, 255, 255, 0.25);
+            /* 밝은 배경에 잘 어울리는 세련된 차콜 그라데이션 글자색 */
+            background: linear-gradient(to right, #0f172a, #334155);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0px 4px 10px rgba(15, 23, 42, 0.1);
             cursor: default;
         }
 
