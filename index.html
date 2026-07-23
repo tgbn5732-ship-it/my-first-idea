@@ -4,11 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 감정 일기장</title>
+    <title>AI 감정일기</title>
     <!-- Google Fonts: Inter & Noto Sans KR -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS SDK CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary-color: #6366f1;
@@ -16,8 +18,8 @@
             --secondary-color: #ec4899;
             --secondary-hover: #db2777;
             --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #f3e8ff 100%);
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --card-shadow: 0 20px 40px rgba(99, 102, 241, 0.08);
+            --card-bg: rgba(255, 255, 255, 0.88);
+            --card-shadow: 0 20px 40px rgba(99, 102, 241, 0.1);
             --text-main: #1e293b;
             --text-muted: #64748b;
             --gray-box-bg: #f1f5f9;
@@ -51,7 +53,229 @@
             border-radius: 24px;
             padding: 40px;
             box-shadow: var(--card-shadow);
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
+        }
+
+        /* --- 🔐 로그인 / 회원가입 화면 스타일 --- */
+        #authContainer {
+            max-width: 440px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .auth-title {
+            font-size: 30px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .auth-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1.5px solid #cbd5e1;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s ease;
+            background-color: #ffffff;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .auth-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn-login {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-signup {
+            flex: 1;
+            padding: 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 12px;
+            background-color: #ffffff;
+            color: #475569;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-signup:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+            color: var(--text-main);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+
+        .divider span {
+            padding: 0 14px;
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            background-color: #ffffff;
+            color: #334155;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .btn-google:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .auth-message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            text-align: center;
+            display: none;
+            white-space: pre-wrap;
+        }
+
+        .auth-message.error {
+            display: block;
+            background-color: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+        }
+
+        .auth-message.success {
+            display: block;
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #86efac;
+        }
+
+        /* --- 📝 일기장 메인 화면 스타일 (로그인 후) --- */
+        #appContainer {
+            display: none;
+        }
+
+        .user-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .user-info {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-logout {
+            background: #f1f5f9;
+            border: 1.5px solid #cbd5e1;
+            color: #64748b;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: #e2e8f0;
+            color: #0f172a;
         }
 
         .header {
@@ -211,10 +435,6 @@
             transform: none !important;
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .response-section {
             border-top: 1px dashed #cbd5e1;
             padding-top: 28px;
@@ -251,7 +471,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
         }
 
-        /* 1. '나의 일기 히스토리' 섹션 스타일 */
         .history-section {
             border-top: 1px dashed #cbd5e1;
             padding-top: 28px;
@@ -349,41 +568,73 @@
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-            }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         @media (max-width: 480px) {
-            .container {
-                padding: 24px;
-            }
-            .button-group {
-                flex-direction: column;
-            }
-            h1 {
-                font-size: 24px;
-            }
+            .container { padding: 24px; }
+            .button-group, .auth-actions { flex-direction: column; }
+            h1 { font-size: 24px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <!-- 🔐 1. 로그인하지 않은 사용자용 로그인/회원가입 카드 -->
+    <div id="authContainer" class="container">
+        <header class="auth-header">
+            <span class="auth-badge">✨ Supabase Auth</span>
+            <h1 class="auth-title">AI 감정일기</h1>
+            <p class="auth-desc">나만의 마음 기록을 위한 비밀 일기장</p>
+        </header>
+
+        <form id="authForm" class="auth-form" onsubmit="return false;">
+            <div class="form-group">
+                <label class="form-label" for="authEmail">이메일 주소</label>
+                <input type="email" id="authEmail" class="form-input" placeholder="example@email.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="authPassword">비밀번호</label>
+                <input type="password" id="authPassword" class="form-input" placeholder="비밀번호를 입력하세요" required>
+            </div>
+
+            <div class="auth-actions">
+                <button type="button" id="loginBtn" class="btn-login">로그인</button>
+                <button type="button" id="signUpBtn" class="btn-signup">회원가입</button>
+            </div>
+
+            <div class="divider">
+                <span>또는</span>
+            </div>
+
+            <button type="button" id="googleBtn" class="btn-google">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                Google로 로그인
+            </button>
+
+            <div id="authMessage" class="auth-message"></div>
+        </form>
+    </div>
+
+    <!-- 📝 2. 로그인에 성공한 사용자용 메인 일기장 카드 -->
+    <div id="appContainer" class="container">
+        <!-- 상단 유저 네비게이션 -->
+        <div class="user-nav">
+            <span class="user-info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span id="userEmailText">사용자 님</span>
+            </span>
+            <button type="button" id="logoutBtn" class="btn-logout">로그아웃</button>
+        </div>
+
         <!-- 헤더 영역 -->
         <header class="header">
-            <span class="header-badge">✨ AI 감정 일기장</span>
+            <span class="header-badge">✨ AI 감정일기</span>
             <h1>오늘의 하루는 어땠나요?</h1>
             <p class="header-desc">작은 감정 하나하나, AI가 당신의 마음을 들어드릴게요</p>
         </header>
@@ -400,11 +651,11 @@
         <!-- 버튼 그룹 -->
         <div class="button-group">
             <button type="button" id="voiceBtn" class="btn btn-voice">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                 <span id="voiceBtnText">음성으로 입력하기</span>
             </button>
             <button type="button" id="analyzeBtn" class="btn btn-analyze">
-                <svg id="analyzeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <svg id="analyzeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                 <span id="analyzeBtnText">분석 요청하기</span>
             </button>
         </div>
@@ -412,26 +663,38 @@
         <!-- AI 답변 영역 -->
         <section class="response-section">
             <h2>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
                 AI의 답변
             </h2>
             <div id="aiResponse" class="response-box">여기에 AI의 답변이 표시됩니다.</div>
         </section>
 
-        <!-- 1. '나의 일기 히스토리' 섹션 -->
+        <!-- 일기 히스토리 섹션 -->
         <section class="history-section">
             <h2>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
                 나의 일기 히스토리
             </h2>
             <div id="historyList" class="history-list">
-                <div class="history-loading">✨ Serverless Redis에서 저장된 일기 목록을 불러오는 중...</div>
+                <div class="history-loading">✨ 클라우드에서 저장된 일기 목록을 불러오는 중...</div>
             </div>
         </section>
     </div>
 
-    <!-- JavaScript: 백엔드 API 연동 및 히스토리 조회 기능 -->
+    <!-- JavaScript: Supabase Auth 인증 및 감정일기 로직 -->
     <script>
+        // DOM 요소 정의
+        const authContainer = document.getElementById('authContainer');
+        const appContainer = document.getElementById('appContainer');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        const loginBtn = document.getElementById('loginBtn');
+        const signUpBtn = document.getElementById('signUpBtn');
+        const googleBtn = document.getElementById('googleBtn');
+        const authMessage = document.getElementById('authMessage');
+        const userEmailText = document.getElementById('userEmailText');
+        const logoutBtn = document.getElementById('logoutBtn');
+
         const diaryInput = document.getElementById('diaryInput');
         const voiceBtn = document.getElementById('voiceBtn');
         const voiceBtnText = document.getElementById('voiceBtnText');
@@ -445,12 +708,153 @@
         const STORAGE_KEY_DIARY = 'saved_diary_content';
         const STORAGE_KEY_RESPONSE = 'saved_ai_response';
 
-        // 날짜 포맷 함수 (YYYY. MM. DD HH:mm)
+        let supabaseClient = null;
+
+        // 1. Supabase 인스턴스 초기화 및 세션 체크
+        async function initSupabase() {
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                if (config.supabaseUrl && config.supabaseAnonKey) {
+                    supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+                    // 인증 상태 변화 수신기 등록
+                    supabaseClient.auth.onAuthStateChange((event, session) => {
+                        updateAuthView(session);
+                    });
+
+                    // 현재 세션 확인
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    updateAuthView(session);
+                } else {
+                    console.warn('Supabase URL/ANON KEY를 불러올 수 없습니다.');
+                }
+            } catch (e) {
+                console.error('Supabase 클라이언트 초기화 실패:', e);
+            }
+        }
+
+        // 로그인 여부에 따른 화면 전환 함수
+        function updateAuthView(session) {
+            if (session && session.user) {
+                authContainer.style.display = 'none';
+                appContainer.style.display = 'block';
+                userEmailText.textContent = session.user.email || '사용자 님';
+                fetchDiaryHistory();
+            } else {
+                authContainer.style.display = 'block';
+                appContainer.style.display = 'none';
+            }
+        }
+
+        function showAuthMsg(msg, isError = true) {
+            authMessage.className = 'auth-message ' + (isError ? 'error' : 'success');
+            authMessage.textContent = msg;
+        }
+
+        // 로그인 버튼 클릭
+        loginBtn.addEventListener('click', async () => {
+            const email = authEmail.value.trim();
+            const password = authPassword.value.trim();
+
+            if (!email || !password) {
+                showAuthMsg('이메일과 비밀번호를 모두 입력해 주세요.');
+                return;
+            }
+
+            if (!supabaseClient) {
+                showAuthMsg('Supabase 클라이언트가 초기화 중입니다. 잠시 후 다시 시도해 주세요.');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = '로그인 중...';
+            showAuthMsg('');
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            loginBtn.disabled = false;
+            loginBtn.textContent = '로그인';
+
+            if (error) {
+                showAuthMsg('로그인 실패: ' + (error.message.includes('Invalid') ? '이메일 또는 비밀번호가 올바르지 않습니다.' : error.message));
+            } else {
+                showAuthMsg('로그인 성공!', false);
+            }
+        });
+
+        // 회원가입 버튼 클릭
+        signUpBtn.addEventListener('click', async () => {
+            const email = authEmail.value.trim();
+            const password = authPassword.value.trim();
+
+            if (!email || !password) {
+                showAuthMsg('회원가입을 위한 이메일과 비밀번호를 입력해 주세요.');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAuthMsg('비밀번호는 최소 6자리 이상이어야 합니다.');
+                return;
+            }
+
+            if (!supabaseClient) {
+                showAuthMsg('Supabase 클라이언트 초기화 중입니다.');
+                return;
+            }
+
+            signUpBtn.disabled = true;
+            signUpBtn.textContent = '회원가입 중...';
+            showAuthMsg('');
+
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+
+            signUpBtn.disabled = false;
+            signUpBtn.textContent = '회원가입';
+
+            if (error) {
+                showAuthMsg('회원가입 실패: ' + error.message);
+            } else {
+                showAuthMsg('🎉 회원가입이 완료되었습니다! 이메일 확인 후 로그인해 주세요.', false);
+            }
+        });
+
+        // Google로 로그인 버튼 클릭
+        googleBtn.addEventListener('click', async () => {
+            if (!supabaseClient) {
+                showAuthMsg('Supabase 클라이언트 초기화 중입니다.');
+                return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+
+            if (error) {
+                showAuthMsg('Google 로그인 실패: ' + error.message);
+            }
+        });
+
+        // 로그아웃 버튼 클릭
+        logoutBtn.addEventListener('click', async () => {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+            authContainer.style.display = 'block';
+            appContainer.style.display = 'none';
+            authEmail.value = '';
+            authPassword.value = '';
+            showAuthMsg('');
+        });
+
+        // --- 히스토리 및 일기 분석 기능 ---
         function formatDate(dateString, idString) {
             try {
                 let d = dateString ? new Date(dateString) : null;
                 if (!d || isNaN(d.getTime())) {
-                    // id 기반 파싱 (diary-20260723152000)
                     if (idString && idString.startsWith('diary-')) {
                         const numStr = idString.replace('diary-', '');
                         if (numStr.length >= 14) {
@@ -475,13 +879,10 @@
             }
         }
 
-        // 2 & 3. Serverless Redis에서 모든 일기 데이터를 /api/history API로 가져와 최신순 카드 형태로 렌더링
         async function fetchDiaryHistory() {
             try {
                 const response = await fetch('/api/history');
-                if (!response.ok) {
-                    throw new Error('히스토리를 불러올 수 없습니다.');
-                }
+                if (!response.ok) throw new Error('히스토리를 불러올 수 없습니다.');
                 const data = await response.json();
                 const items = data.items || [];
 
@@ -490,7 +891,6 @@
                     return;
                 }
 
-                // 카드 HTML 생성 (최신순 렌더링)
                 historyList.innerHTML = items.map(item => {
                     const formattedTime = formatDate(item.createdAt, item.id);
                     return `
@@ -507,36 +907,14 @@
                         </div>
                     `;
                 }).join('');
-
             } catch (error) {
-                console.warn('히스토리 로드 예외:', error);
-                historyList.innerHTML = '<div class="history-empty">클라우드 히스토리를 가져오는 데 실패했습니다.<br>새로고침 후 다시 시도해 주세요.</div>';
+                historyList.innerHTML = '<div class="history-empty">클라우드 히스토리를 가져오는 데 실패했습니다.</div>';
             }
         }
 
         function escapeHtml(str) {
-            return str
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
-
-        // 페이지 로드 시 백엔드 히스토리 및 로컬 데이터 복원
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedDiary = localStorage.getItem(STORAGE_KEY_DIARY);
-            const savedResponse = localStorage.getItem(STORAGE_KEY_RESPONSE);
-
-            if (savedDiary) diaryInput.value = savedDiary;
-            if (savedResponse) {
-                aiResponse.classList.add('has-content');
-                aiResponse.textContent = savedResponse;
-            }
-
-            // 2) Serverless Redis 히스토리 불러오기
-            fetchDiaryHistory();
-        });
 
         // Web Speech API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -552,7 +930,7 @@
             recognition.onstart = () => {
                 isListening = true;
                 voiceBtn.classList.add('listening');
-                voiceBtnText.textContent = '음성 듣는 중... (클릭 시 중지)';
+                voiceBtnText.textContent = '음성 듣는 중...';
             };
 
             recognition.onresult = (event) => {
@@ -571,9 +949,7 @@
 
         function stopListening() {
             isListening = false;
-            if (recognition) {
-                try { recognition.stop(); } catch(e) {}
-            }
+            if (recognition) try { recognition.stop(); } catch(e) {}
             voiceBtn.classList.remove('listening');
             voiceBtnText.textContent = '음성으로 입력하기';
         }
@@ -584,9 +960,7 @@
                 return;
             }
             if (isListening) stopListening();
-            else {
-                try { recognition.start(); } catch (e) { stopListening(); }
-            }
+            else { try { recognition.start(); } catch (e) { stopListening(); } }
         });
 
         clearBtn.addEventListener('click', () => {
@@ -599,26 +973,21 @@
             diaryInput.focus();
         });
 
-        // 🔒 Vercel 백엔드 API (/api/analyze) 호출 함수
         async function fetchBackendAnalyzeAPI(diaryContent) {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ diary: diaryContent })
             });
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error || `서버 오류 (상태 코드: ${response.status})`);
+                throw new Error(errData.error || `서버 오류 (${response.status})`);
             }
-
             const data = await response.json();
             return data.result;
         }
 
-        // '분석 요청하기' 이벤트
         analyzeBtn.addEventListener('click', async () => {
             const diaryText = diaryInput.value.trim();
             if (!diaryText) {
@@ -632,7 +1001,7 @@
             analyzeBtn.disabled = true;
             analyzeBtnText.textContent = 'AI 심리 분석 중...';
             analyzeIcon.style.display = 'none';
-            
+
             const spinner = document.createElement('span');
             spinner.className = 'loading-spinner';
             analyzeBtn.prepend(spinner);
@@ -643,13 +1012,9 @@
             try {
                 const reply = await fetchBackendAnalyzeAPI(diaryText);
                 aiResponse.textContent = reply;
-
                 localStorage.setItem(STORAGE_KEY_DIARY, diaryText);
                 localStorage.setItem(STORAGE_KEY_RESPONSE, reply);
-
-                // 새 일기가 등록되면 히스토리 목록 즉시 새로고침
-                setTimeout(fetchDiaryHistory, 500);
-
+                setTimeout(fetchDiaryHistory, 400);
             } catch (err) {
                 console.warn('Vercel API 응답 분석 예외:', err.message);
                 aiResponse.textContent = `감정: 인내\n\n쉽지 않은 환경 속에서도 성실히 일기를 작성해주셔서 감사합니다. 오늘 하루도 고생 많으셨어요!`;
@@ -657,10 +1022,21 @@
                 analyzeBtn.disabled = false;
                 analyzeBtnText.textContent = '분석 요청하기';
                 analyzeIcon.style.display = 'inline-block';
-                if (spinner.parentNode) {
-                    spinner.parentNode.removeChild(spinner);
-                }
+                if (spinner.parentNode) spinner.parentNode.removeChild(spinner);
             }
+        });
+
+        // 페이지 로드 시 Supabase 초기화 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedDiary = localStorage.getItem(STORAGE_KEY_DIARY);
+            const savedResponse = localStorage.getItem(STORAGE_KEY_RESPONSE);
+            if (savedDiary) diaryInput.value = savedDiary;
+            if (savedResponse) {
+                aiResponse.classList.add('has-content');
+                aiResponse.textContent = savedResponse;
+            }
+
+            initSupabase();
         });
     </script>
 </body>
