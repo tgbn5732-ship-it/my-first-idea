@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "AI 감정 일기장 Vercel 백엔드 프로젝트",
+  "description": "AI 감정 일기장 Vercel 백엔드 프로젝트 (Redis & Supabase 연동)",
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "ioredis": "^5.4.1"
   }
 }
