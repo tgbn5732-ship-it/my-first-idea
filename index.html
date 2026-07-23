@@ -674,7 +674,7 @@
         </section>
     </div>
 
-    <!-- JavaScript: Supabase Auth 및 디버그 디테일 -->
+    <!-- JavaScript: 이중 라우트 통신 및 Supabase Auth 연동 -->
     <script>
         const authContainer = document.getElementById('authContainer');
         const appContainer = document.getElementById('appContainer');
@@ -716,21 +716,23 @@
             if (supabaseClient) return supabaseClient;
 
             try {
-                const res = await fetch('/api/config');
-                const config = await res.json();
-                
-                if (config.supabaseUrl && config.supabaseAnonKey) {
-                    const createFn = window.supabase?.createClient || window.createClient;
-                    if (createFn) {
-                        supabaseClient = createFn(config.supabaseUrl, config.supabaseAnonKey);
-                        return supabaseClient;
+                let res = await fetch('/api/config.js').catch(() => null);
+                if (!res || !res.ok) {
+                    res = await fetch('/api/config').catch(() => null);
+                }
+
+                if (res && res.ok) {
+                    const config = await res.json();
+                    if (config.supabaseUrl && config.supabaseAnonKey) {
+                        const createFn = window.supabase?.createClient || window.createClient;
+                        if (createFn) {
+                            supabaseClient = createFn(config.supabaseUrl, config.supabaseAnonKey);
+                            return supabaseClient;
+                        }
                     }
-                } else {
-                    const keysInfo = config.allFoundKeys ? config.allFoundKeys.join(', ') : '없음';
-                    showAuthMsg(`Vercel에 Supabase 키가 수동 재배포 필요할 수 있습니다. (감지된키: ${keysInfo})`, true);
                 }
             } catch (e) {
-                showAuthMsg('Supabase 설정 정보 통신 오류: ' + e.message, true);
+                console.warn('Supabase config 통신 실패:', e);
             }
             return null;
         }
@@ -777,6 +779,7 @@
                 if (!client) {
                     loginBtn.disabled = false;
                     loginBtn.textContent = '로그인';
+                    showAuthMsg('Supabase 연결 설정 정보를 불러오는 중입니다. 5초 후 다시 눌러주세요.');
                     return;
                 }
 
@@ -793,7 +796,7 @@
             } catch (err) {
                 loginBtn.disabled = false;
                 loginBtn.textContent = '로그인';
-                showAuthMsg('로그인 오류: ' + err.message);
+                showAuthMsg('로그인 처리 중 오류 발생: ' + err.message);
             }
         });
 
@@ -820,6 +823,7 @@
                 if (!client) {
                     signUpBtn.disabled = false;
                     signUpBtn.textContent = '회원가입';
+                    showAuthMsg('Supabase 설정 정보 연결 중입니다. 5초 후 다시 눌러주세요.');
                     return;
                 }
 
@@ -834,7 +838,7 @@
                 if (error) {
                     showAuthMsg('회원가입 실패: ' + error.message, true);
                 } else {
-                    showAuthMsg('🎉 회원가입 성공! 이제 [로그인] 버튼을 눌러 들어오세요.', false);
+                    showAuthMsg('🎉 회원가입 신청 완료! 이제 [로그인] 버튼을 눌러 들어오세요.', false);
                 }
             } catch (err) {
                 signUpBtn.disabled = false;
