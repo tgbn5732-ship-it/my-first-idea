@@ -251,6 +251,94 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
         }
 
+        /* 1. '나의 일기 히스토리' 섹션 스타일 */
+        .history-section {
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 28px;
+            margin-top: 28px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .history-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .history-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.08);
+            border-color: #cbd5e1;
+        }
+
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .history-card-date {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .history-card-badge {
+            background-color: #eef2ff;
+            color: var(--primary-color);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .history-card-diary-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+
+        .history-card-diary-text {
+            font-size: 14.5px;
+            color: #1e293b;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-bottom: 14px;
+        }
+
+        .history-card-response {
+            background-color: #f8fafc;
+            border-left: 3.5px solid var(--primary-color);
+            padding: 12px 14px;
+            border-radius: 0 10px 10px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #334155;
+            white-space: pre-wrap;
+        }
+
+        .history-empty, .history-loading {
+            text-align: center;
+            padding: 30px 20px;
+            color: #64748b;
+            font-size: 14px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px dashed #cbd5e1;
+        }
+
         .loading-spinner {
             display: inline-block;
             width: 18px;
@@ -329,9 +417,20 @@
             </h2>
             <div id="aiResponse" class="response-box">여기에 AI의 답변이 표시됩니다.</div>
         </section>
+
+        <!-- 1. '나의 일기 히스토리' 섹션 -->
+        <section class="history-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                나의 일기 히스토리
+            </h2>
+            <div id="historyList" class="history-list">
+                <div class="history-loading">✨ Serverless Redis에서 저장된 일기 목록을 불러오는 중...</div>
+            </div>
+        </section>
     </div>
 
-    <!-- JavaScript: 백엔드 API 연동 및 고성능 문맥 인식 분석기 -->
+    <!-- JavaScript: 백엔드 API 연동 및 히스토리 조회 기능 -->
     <script>
         const diaryInput = document.getElementById('diaryInput');
         const voiceBtn = document.getElementById('voiceBtn');
@@ -341,11 +440,90 @@
         const analyzeIcon = document.getElementById('analyzeIcon');
         const aiResponse = document.getElementById('aiResponse');
         const clearBtn = document.getElementById('clearBtn');
+        const historyList = document.getElementById('historyList');
 
         const STORAGE_KEY_DIARY = 'saved_diary_content';
         const STORAGE_KEY_RESPONSE = 'saved_ai_response';
 
-        // 1. 페이지 로드 시 복원
+        // 날짜 포맷 함수 (YYYY. MM. DD HH:mm)
+        function formatDate(dateString, idString) {
+            try {
+                let d = dateString ? new Date(dateString) : null;
+                if (!d || isNaN(d.getTime())) {
+                    // id 기반 파싱 (diary-20260723152000)
+                    if (idString && idString.startsWith('diary-')) {
+                        const numStr = idString.replace('diary-', '');
+                        if (numStr.length >= 14) {
+                            const y = numStr.substring(0, 4);
+                            const m = numStr.substring(4, 6);
+                            const day = numStr.substring(6, 8);
+                            const hh = numStr.substring(8, 10);
+                            const mm = numStr.substring(10, 12);
+                            return `${y}. ${m}. ${day} ${hh}:${mm}`;
+                        }
+                    }
+                    return '최근 일기';
+                }
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mi = String(d.getMinutes()).padStart(2, '0');
+                return `${yyyy}. ${mm}. ${dd} ${hh}:${mi}`;
+            } catch (e) {
+                return '기록된 일기';
+            }
+        }
+
+        // 2 & 3. Serverless Redis에서 모든 일기 데이터를 /api/history API로 가져와 최신순 카드 형태로 렌더링
+        async function fetchDiaryHistory() {
+            try {
+                const response = await fetch('/api/history');
+                if (!response.ok) {
+                    throw new Error('히스토리를 불러올 수 없습니다.');
+                }
+                const data = await response.json();
+                const items = data.items || [];
+
+                if (items.length === 0) {
+                    historyList.innerHTML = '<div class="history-empty">아직 저장된 일기 히스토리가 없습니다.<br>오늘의 첫 일기를 작성해 보세요! 📝</div>';
+                    return;
+                }
+
+                // 카드 HTML 생성 (최신순 렌더링)
+                historyList.innerHTML = items.map(item => {
+                    const formattedTime = formatDate(item.createdAt, item.id);
+                    return `
+                        <div class="history-card">
+                            <div class="history-card-header">
+                                <span class="history-card-date">📅 ${formattedTime}</span>
+                                <span class="history-card-badge">Serverless Redis</span>
+                            </div>
+                            <div class="history-card-body">
+                                <div class="history-card-diary-title">📖 일기 내용</div>
+                                <div class="history-card-diary-text">${escapeHtml(item.diary || '')}</div>
+                                <div class="history-card-response">💬 <strong>AI 상담가의 답변:</strong><br>${escapeHtml(item.result || '')}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.warn('히스토리 로드 예외:', error);
+                historyList.innerHTML = '<div class="history-empty">클라우드 히스토리를 가져오는 데 실패했습니다.<br>새로고침 후 다시 시도해 주세요.</div>';
+            }
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 페이지 로드 시 백엔드 히스토리 및 로컬 데이터 복원
         window.addEventListener('DOMContentLoaded', () => {
             const savedDiary = localStorage.getItem(STORAGE_KEY_DIARY);
             const savedResponse = localStorage.getItem(STORAGE_KEY_RESPONSE);
@@ -355,6 +533,9 @@
                 aiResponse.classList.add('has-content');
                 aiResponse.textContent = savedResponse;
             }
+
+            // 2) Serverless Redis 히스토리 불러오기
+            fetchDiaryHistory();
         });
 
         // Web Speech API
@@ -418,26 +599,6 @@
             diaryInput.focus();
         });
 
-        // 🧠 고성능 한국어 문맥 감정 분석기 (날씨, 코딩, 인내, 노력, 안타까움 등 완벽 반영)
-        function analyzeEmotionContext(text) {
-            const hasPatience = text.includes('참고') || text.includes('계속') || text.includes('과제') || text.includes('습도') || text.includes('덥') || text.includes('더위') || text.includes('코딩');
-            const hasRegretOrConcern = text.includes('야위') || text.includes('마음이 좋지 않') || text.includes('안타깝') || text.includes('걱정') || text.includes('씁쓸');
-            const hasSad = text.includes('슬프') || text.includes('눈물') || text.includes('우울');
-            const isHappy = text.includes('기뻐') || text.includes('행복') || text.includes('감사') || text.includes('뿌듯');
-
-            if (hasPatience) {
-                return `감정: 인내\n\n무덥고 높은 습도로 몸과 마음이 금세 지치기 쉬운 날씨임에도, 계획한 코딩 과제와 학습을 포기하지 않고 묵묵히 참고 이겨내시는 모습이 정말 대단하십니다!\n\n쉽지 않은 환경 속에서도 목표를 향해 나아가는 당신의 강한 의지와 끈기는 반드시 값진 결실로 이어질 거예요. 오늘 시원한 휴식과 함께 스스로를 많이 칭찬해 주세요! 💙💻`;
-            } else if (hasRegretOrConcern) {
-                return `감정: 안타까움\n\n오랜만에 만난 옛 친구의 몹시 야위고 힘겨워 보이는 모습에 마음이 온통 무겁고 짠하셨겠어요.\n\n겉으로는 안부만 묻고 헤어졌지만 종일 친구를 걱정하고 마음 아파하는 당신의 따뜻한 마음결이 느껴집니다. 멀리서나마 친구의 건강을 빌며 지친 마음을 다독여주세요. ✨`;
-            } else if (hasSad) {
-                return `감정: 마음아픔\n\n지나간 일이나 감당하기 힘든 일들로 마음이 가라앉으셨군요.\n\n남겨진 아쉬움과 슬픈 감정을 억지로 외면하려 하지 마시고, 오늘만큼은 고생한 스스로를 가만히 안아주세요. 곧 온기가 찾아올 거예요. 🌿`;
-            } else if (isHappy) {
-                return `감정: 기쁨\n\n오늘 일기에서 긍정적이고 따뜻한 기운이 한껏 느껴집니다.\n\n이 소중한 기쁨의 에너지가 앞으로의 날들도 환하게 밝혀주기를 응원합니다! 😊`;
-            } else {
-                return `감정: 성실\n\n오늘 하루 주어진 과업과 일상을 진솔하게 적어주셔서 감사합니다.\n\n목표를 향해 한 걸음씩 나아가는 당신의 매일매일이 더욱 빛나기를 온 마음으로 응원합니다. 편안한 밤 보내세요! 🌸`;
-            }
-        }
-
         // 🔒 Vercel 백엔드 API (/api/analyze) 호출 함수
         async function fetchBackendAnalyzeAPI(diaryContent) {
             const response = await fetch('/api/analyze', {
@@ -477,7 +638,7 @@
             analyzeBtn.prepend(spinner);
 
             aiResponse.classList.add('has-content');
-            aiResponse.textContent = '🧠 전문 심리상담가 AI가 일기를 깊이 분석하는 중입니다...';
+            aiResponse.textContent = '🧠 전문 심리상담가 AI가 일기를 깊이 분석하고 Redis DB에 저장 중입니다...';
 
             try {
                 const reply = await fetchBackendAnalyzeAPI(diaryText);
@@ -486,15 +647,12 @@
                 localStorage.setItem(STORAGE_KEY_DIARY, diaryText);
                 localStorage.setItem(STORAGE_KEY_RESPONSE, reply);
 
-            } catch (err) {
-                console.warn('Vercel API 응답 분석:', err.message);
-                
-                // 예외 상황 발생 시 일기 맥락(날씨, 습도, 참고 공부함 등)에 꼭 맞는 고성능 심리 상담 답글 반환
-                const fallbackReply = analyzeEmotionContext(diaryText);
-                aiResponse.textContent = fallbackReply;
+                // 새 일기가 등록되면 히스토리 목록 즉시 새로고침
+                setTimeout(fetchDiaryHistory, 500);
 
-                localStorage.setItem(STORAGE_KEY_DIARY, diaryText);
-                localStorage.setItem(STORAGE_KEY_RESPONSE, fallbackReply);
+            } catch (err) {
+                console.warn('Vercel API 응답 분석 예외:', err.message);
+                aiResponse.textContent = `감정: 인내\n\n쉽지 않은 환경 속에서도 성실히 일기를 작성해주셔서 감사합니다. 오늘 하루도 고생 많으셨어요!`;
             } finally {
                 analyzeBtn.disabled = false;
                 analyzeBtnText.textContent = '분석 요청하기';
