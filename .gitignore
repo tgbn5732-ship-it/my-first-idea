@@ -1,2 +1,5 @@
 argv.json
 extensions/
+config.js
+.env
+*.env

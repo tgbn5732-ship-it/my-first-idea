@@ -1,0 +1,9 @@
+{
+  "name": "ai-emotion-diary",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI 감정 일기장 Vercel 백엔드 프로젝트",
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  }
+}

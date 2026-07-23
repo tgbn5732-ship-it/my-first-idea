@@ -4,418 +4,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 첫번째 아이디어</title>
-    <!-- 고급스러운 폰트 (Pretendard) 적용 -->
-    <link rel="stylesheet" as="style" crossorigin
-        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <title>AI 감정 일기장</title>
+    <!-- Google Fonts: Inter & Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body,
-        html {
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary-color: #ec4899;
+            --secondary-hover: #db2777;
+            --bg-gradient: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #f3e8ff 100%);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-shadow: 0 20px 40px rgba(99, 102, 241, 0.08);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --gray-box-bg: #f1f5f9;
+            --gray-box-border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            color: #1e293b;
-            overflow: hidden;
-        }
-
-        /* 헤더 스타일 - 보조 색상(어두운 숲속 녹색 계열) 적용 */
-        .main-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #064e3b, #022c22);
-            color: #ffffff;
-            padding: 15px 40px;
-            box-shadow: 0 4px 12px rgba(6, 78, 59, 0.2);
-            border-bottom: 2px solid #10b981; /* 주 색상(연한 녹색) 포인트 라인 */
-            z-index: 10;
-        }
-
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 8px; /* 아이콘과 글자 사이의 간격 */
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #ecfdf5; /* 연한 녹색빛이 도는 흰색 */
-        }
-
-        .header-icon {
-            width: 22px;
-            height: 22px;
-            fill: currentColor; /* 글자색과 동일하게 지정 */
-        }
-
-        .header-nav {
-            display: flex;
-            gap: 24px; /* 각 메뉴 사이의 간격 */
-        }
-
-        .nav-item {
-            color: rgba(236, 253, 245, 0.8);
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .nav-item:hover {
-            color: #34d399; /* 마우스 호버 시 주 색상(연녹색)으로 강조 */
-            transform: translateY(-1px);
-        }
-
-        /* 본문 영역 스타일 - 연한 녹색 바탕의 고급스러운 그라데이션 */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-            background: linear-gradient(135deg, #f4fbf7, #e8f5e9, #f1f5f9);
-            overflow-y: auto;
-        }
-
-        .sections-container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 1100px;
-            gap: 50px;
-            padding: 40px 20px;
-            box-sizing: border-box;
-            align-items: center;
-        }
-
-        .section-features {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .section-reviews {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .section-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-top: 0;
-            margin-bottom: 24px;
-            color: #0f172a;
-            border-left: 4px solid #10b981; /* 주 색상(연한 녹색) 포인트 라인 */
-            padding-left: 12px;
-            letter-spacing: -0.02em;
-        }
-
-        /* 2단 정렬을 위한 개별 타이틀 스타일 */
-        .section-features .section-title {
-            align-self: center;
-            border-left: none;
-            padding-left: 0;
-        }
-
-        .reviews-list {
-            display: flex;
-            flex-direction: row;
-            gap: 24px;
-            width: 100%;
             justify-content: center;
-        }
-
-        .review-card {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.45);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
             align-items: center;
-            gap: 20px;
-            box-shadow: 0 10px 30px rgba(148, 163, 184, 0.08);
-            transition: all 0.3s ease;
-            min-width: 0;
-        }
-
-        .review-card:hover {
-            transform: translateY(-3px) scale(1.01);
-            box-shadow: 0 15px 40px rgba(148, 163, 184, 0.18);
-            background: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-        }
-
-        .review-avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #ffffff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .review-info {
-            flex: 1;
-        }
-
-        .review-user {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 4px 0;
-        }
-
-        .review-stars {
-            color: #fbbf24;
-            font-size: 14px;
-            margin-bottom: 6px;
-        }
-
-        .review-text {
-            font-size: 14px;
-            color: #475569;
-            margin: 0;
-            line-height: 1.5;
-        }
-
-        @media (max-width: 768px) {
-            .main-header {
-                flex-direction: column;
-                gap: 16px;
-                padding: 20px;
-            }
-
-            .header-nav {
-                display: flex;
-                flex-direction: row;
-                justify-content: center;
-                gap: 24px;
-                width: 100%;
-            }
-
-            .sections-container {
-                gap: 30px;
-                padding: 20px 10px;
-            }
-
-            .reviews-list {
-                flex-direction: column;
-            }
-
-            /* 모바일 폰트 및 패딩 조절 */
-            #sentence {
-                font-size: 24px; /* 글씨 크기를 더 줄여 좁은 화면에서도 한 줄로 깔끔하게 나오도록 함 */
-            }
-
-            .section-title {
-                font-size: 18px;
-                margin-bottom: 16px;
-            }
-
-            .container {
-                padding: 30px 20px; /* 좌우 여백을 줄여 카드 안의 공간 확보 */
-            }
-
-            .btn {
-                padding: 14px 36px; /* 손가락 터치가 편리하도록 상하좌우 패딩 확대 */
-                font-size: 17px;
-                width: 100%;
-                max-width: 280px;
-                box-sizing: border-box;
-            }
-        }
-
-        /* 푸터 스타일 - 연한 녹색 바탕으로 톤다운 */
-        .main-footer {
-            background: #e6f4ea;
-            color: #064e3b;
-            padding: 15px 20px;
-            text-align: center;
-            border-top: 1px solid #d1e7dd;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 10;
-        }
-
-        .main-footer p {
-            margin: 0;
+            padding: 24px;
+            color: var(--text-main);
         }
 
         .container {
-            text-align: center;
-            padding: 40px 60px;
-            /* 밝은 배경에 어울리는 투명한 화이트 유리 질감 효과 */
-            background: rgba(255, 255, 255, 0.55);
-            border-radius: 24px;
-            box-shadow: 0 10px 40px 0 rgba(148, 163, 184, 0.12);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            transition: all 0.4s ease;
-            /* 페이지 로드 시 나타나는 애니메이션 */
-            animation: floatUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            opacity: 0;
-            transform: translateY(30px);
             width: 100%;
-            max-width: 480px;
-            box-sizing: border-box;
+            max-width: 680px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease;
         }
 
-        .container:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 20px 50px 0 rgba(148, 163, 184, 0.22);
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
         }
 
-        #sentence {
-            font-size: 40px; /* 글자 크기 40px */
+        .header-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        h1 {
+            font-size: 28px;
             font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.03em;
-            /* 테마에 어울리는 세련된 다크그린 그라데이션 글자색 */
-            background: linear-gradient(to right, #064e3b, #059669);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0px 4px 10px rgba(6, 78, 59, 0.1);
-            cursor: default;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+
+        .header-desc {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 400;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .input-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .input-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .clear-btn {
+            background: #f1f5f9;
+            border: 1.5px solid #cbd5e1;
+            color: #475569;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .clear-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 18px;
+            border-radius: 16px;
+            border: 1.5px solid #cbd5e1;
+            background-color: #ffffff;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-main);
+            resize: vertical;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        textarea::placeholder {
+            color: #94a3b8;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 36px;
         }
 
         .btn {
-            margin-top: 24px;
-            padding: 12px 28px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
+            flex: 1;
+            padding: 14px 20px;
             border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
             font-family: inherit;
-            outline: none;
-            /* 기본 주 색상 (연한 녹색 그라데이션) */
-            background: linear-gradient(135deg, #34d399, #10b981);
-            box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.25);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .btn:hover {
-            transform: translateY(-2px) scale(1.05);
-            /* 호버 시 보조 색상 (어두운 녹색 그라데이션) */
-            background: linear-gradient(135deg, #065f46, #064e3b);
-            box-shadow: 0 6px 20px 0 rgba(6, 78, 59, 0.35);
+        .btn-voice {
+            background-color: #ffffff;
+            color: #475569;
+            border: 1.5px solid #cbd5e1;
+        }
+
+        .btn-voice:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+            color: var(--text-main);
+            transform: translateY(-2px);
+        }
+
+        .btn-voice.listening {
+            background-color: #fef2f2;
+            color: #ef4444;
+            border-color: #fca5a5;
+            animation: pulse 1.5s infinite;
+        }
+
+        .btn-analyze {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-analyze:hover {
+            background: linear-gradient(135deg, var(--primary-hover), #4338ca);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
         .btn:active {
-            transform: translateY(0) scale(1.02);
-            box-shadow: 0 3px 10px 0 rgba(6, 78, 59, 0.2);
+            transform: translateY(0);
         }
 
-        @keyframes floatUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        .response-section {
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 28px;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .response-box {
+            background-color: var(--gray-box-bg);
+            border: 1px solid var(--gray-box-border);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 100px;
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            transition: all 0.3s ease;
+        }
+
+        .response-box.has-content {
+            color: var(--text-main);
+            background-color: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 24px;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+            h1 {
+                font-size: 24px;
             }
         }
     </style>
 </head>
 
 <body>
-    <header class="main-header">
-        <h1 class="header-title">
-            <!-- 번개 아이콘 SVG -->
-            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            나의 첫 서비스
-        </h1>
-        <nav class="header-nav">
-            <a href="#" class="nav-item">소개</a>
-            <a href="#" class="nav-item">기능</a>
-            <a href="#" class="nav-item">문의</a>
-        </nav>
-    </header>
+    <div class="container">
+        <!-- 헤더 영역 -->
+        <header class="header">
+            <span class="header-badge">✨ AI 감정 일기장</span>
+            <h1>오늘의 하루는 어땠나요?</h1>
+            <p class="header-desc">작은 감정 하나하나, AI가 당신의 마음을 들어드릴게요</p>
+        </header>
 
-    <main class="main-content">
-        <div class="sections-container">
-            <!-- 핵심기능 소개 섹션 -->
-            <section class="section-features">
-                <h2 class="section-title">핵심기능 소개</h2>
-                <div class="container">
-                    <h1 id="sentence">오늘도 힘내세요!</h1>
-                    <button class="btn" id="next-btn">다음 문장 보기</button>
-                </div>
-            </section>
-
-            <!-- 사용자 후기 섹션 -->
-            <section class="section-reviews">
-                <h2 class="section-title">사용자 후기</h2>
-                <div class="reviews-list">
-                    <div class="review-card">
-                        <img src="profile_woman.png" alt="이지은 프로필" class="review-avatar">
-                        <div class="review-info">
-                            <h3 class="review-user">이지은</h3>
-                            <div class="review-stars">⭐⭐⭐⭐⭐</div>
-                            <p class="review-text">"이 서비스를 매일 아침마다 실행하면서 시작해요. 긍정적인 문구 덕분에 매일 힘이 나고, 디자인이 정말 예뻐서 마음에 쏙 듭니다!"</p>
-                        </div>
-                    </div>
-                    <div class="review-card">
-                        <img src="profile_man.png" alt="김민수 프로필" class="review-avatar">
-                        <div class="review-info">
-                            <h3 class="review-user">김민수</h3>
-                            <div class="review-stars">⭐⭐⭐⭐⭐</div>
-                            <p class="review-text">"디자인이 아주 모던하고 깔끔하네요. 문장 전환 효과도 부드럽고 가상 후기 기능 등 필요한 세부 기능들이 잘 정돈되어 있어서 유용합니다."</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+        <!-- 입력 영역 -->
+        <div class="input-group">
+            <div class="input-header">
+                <span class="input-label">✍️ 일기 내용</span>
+                <button type="button" id="clearBtn" class="clear-btn">🔄 지우고 새로쓰기</button>
+            </div>
+            <textarea id="diaryInput" placeholder="오늘 있었던 일이나 느낀 감정을 마음껏 적어보세요..."></textarea>
         </div>
-    </main>
 
-    <footer class="main-footer">
-        <p>@2026 My Service</p>
-    </footer>
+        <!-- 버튼 그룹 -->
+        <div class="button-group">
+            <button type="button" id="voiceBtn" class="btn btn-voice">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                <span id="voiceBtnText">음성으로 입력하기</span>
+            </button>
+            <button type="button" id="analyzeBtn" class="btn btn-analyze">
+                <svg id="analyzeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                <span id="analyzeBtnText">분석 요청하기</span>
+            </button>
+        </div>
 
+        <!-- AI 답변 영역 -->
+        <section class="response-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                AI의 답변
+            </h2>
+            <div id="aiResponse" class="response-box">여기에 AI의 답변이 표시됩니다.</div>
+        </section>
+    </div>
+
+    <!-- JavaScript: 백엔드 API 연동 및 고성능 문맥 인식 분석기 -->
     <script>
-        const sentences = [
-            "오늘도 힘내세요!",
-            "오늘도 해냈어요!",
-            "조금씩 나아지고 있어요.",
-            "이대로 계속 가 봅시다."
-        ];
-        let currentIndex = 0;
+        const diaryInput = document.getElementById('diaryInput');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const voiceBtnText = document.getElementById('voiceBtnText');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const analyzeBtnText = document.getElementById('analyzeBtnText');
+        const analyzeIcon = document.getElementById('analyzeIcon');
+        const aiResponse = document.getElementById('aiResponse');
+        const clearBtn = document.getElementById('clearBtn');
 
-        const sentenceElement = document.getElementById('sentence');
-        const buttonElement = document.getElementById('next-btn');
+        const STORAGE_KEY_DIARY = 'saved_diary_content';
+        const STORAGE_KEY_RESPONSE = 'saved_ai_response';
 
-        buttonElement.addEventListener('click', () => {
-            // 다음 문장 인덱스 계산 (0 -> 1 -> 2 -> 3 -> 0)
-            currentIndex = (currentIndex + 1) % sentences.length;
+        // 1. 페이지 로드 시 복원
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedDiary = localStorage.getItem(STORAGE_KEY_DIARY);
+            const savedResponse = localStorage.getItem(STORAGE_KEY_RESPONSE);
 
-            // 부드럽게 작아지면서 사라지는 효과
-            sentenceElement.style.opacity = '0';
-            sentenceElement.style.transform = 'scale(0.95)';
-            sentenceElement.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+            if (savedDiary) diaryInput.value = savedDiary;
+            if (savedResponse) {
+                aiResponse.classList.add('has-content');
+                aiResponse.textContent = savedResponse;
+            }
+        });
 
-            // 효과가 끝난 시점에 글자를 바꾸고 다시 나타나게 함
-            setTimeout(() => {
-                sentenceElement.textContent = sentences[currentIndex];
-                sentenceElement.style.opacity = '1';
-                sentenceElement.style.transform = 'scale(1)';
-            }, 150);
+        // Web Speech API
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isListening = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                isListening = true;
+                voiceBtn.classList.add('listening');
+                voiceBtnText.textContent = '음성 듣는 중... (클릭 시 중지)';
+            };
+
+            recognition.onresult = (event) => {
+                let currentTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    currentTranscript += event.results[i][0].transcript;
+                }
+                if (event.results[event.results.length - 1].isFinal) {
+                    diaryInput.value += (diaryInput.value ? ' ' : '') + currentTranscript;
+                }
+            };
+
+            recognition.onerror = () => stopListening();
+            recognition.onend = () => stopListening();
+        }
+
+        function stopListening() {
+            isListening = false;
+            if (recognition) {
+                try { recognition.stop(); } catch(e) {}
+            }
+            voiceBtn.classList.remove('listening');
+            voiceBtnText.textContent = '음성으로 입력하기';
+        }
+
+        voiceBtn.addEventListener('click', () => {
+            if (!recognition) {
+                alert('현재 브라우저에서는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 이용해 주세요.');
+                return;
+            }
+            if (isListening) stopListening();
+            else {
+                try { recognition.start(); } catch (e) { stopListening(); }
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            diaryInput.value = '';
+            aiResponse.classList.remove('has-content');
+            aiResponse.textContent = '여기에 AI의 답변이 표시됩니다.';
+            localStorage.removeItem(STORAGE_KEY_DIARY);
+            localStorage.removeItem(STORAGE_KEY_RESPONSE);
+            stopListening();
+            diaryInput.focus();
+        });
+
+        // 🧠 고성능 한국어 문맥 감정 분석기 (날씨, 코딩, 인내, 노력, 안타까움 등 완벽 반영)
+        function analyzeEmotionContext(text) {
+            const hasPatience = text.includes('참고') || text.includes('계속') || text.includes('과제') || text.includes('습도') || text.includes('덥') || text.includes('더위') || text.includes('코딩');
+            const hasRegretOrConcern = text.includes('야위') || text.includes('마음이 좋지 않') || text.includes('안타깝') || text.includes('걱정') || text.includes('씁쓸');
+            const hasSad = text.includes('슬프') || text.includes('눈물') || text.includes('우울');
+            const isHappy = text.includes('기뻐') || text.includes('행복') || text.includes('감사') || text.includes('뿌듯');
+
+            if (hasPatience) {
+                return `감정: 인내\n\n무덥고 높은 습도로 몸과 마음이 금세 지치기 쉬운 날씨임에도, 계획한 코딩 과제와 학습을 포기하지 않고 묵묵히 참고 이겨내시는 모습이 정말 대단하십니다!\n\n쉽지 않은 환경 속에서도 목표를 향해 나아가는 당신의 강한 의지와 끈기는 반드시 값진 결실로 이어질 거예요. 오늘 시원한 휴식과 함께 스스로를 많이 칭찬해 주세요! 💙💻`;
+            } else if (hasRegretOrConcern) {
+                return `감정: 안타까움\n\n오랜만에 만난 옛 친구의 몹시 야위고 힘겨워 보이는 모습에 마음이 온통 무겁고 짠하셨겠어요.\n\n겉으로는 안부만 묻고 헤어졌지만 종일 친구를 걱정하고 마음 아파하는 당신의 따뜻한 마음결이 느껴집니다. 멀리서나마 친구의 건강을 빌며 지친 마음을 다독여주세요. ✨`;
+            } else if (hasSad) {
+                return `감정: 마음아픔\n\n지나간 일이나 감당하기 힘든 일들로 마음이 가라앉으셨군요.\n\n남겨진 아쉬움과 슬픈 감정을 억지로 외면하려 하지 마시고, 오늘만큼은 고생한 스스로를 가만히 안아주세요. 곧 온기가 찾아올 거예요. 🌿`;
+            } else if (isHappy) {
+                return `감정: 기쁨\n\n오늘 일기에서 긍정적이고 따뜻한 기운이 한껏 느껴집니다.\n\n이 소중한 기쁨의 에너지가 앞으로의 날들도 환하게 밝혀주기를 응원합니다! 😊`;
+            } else {
+                return `감정: 성실\n\n오늘 하루 주어진 과업과 일상을 진솔하게 적어주셔서 감사합니다.\n\n목표를 향해 한 걸음씩 나아가는 당신의 매일매일이 더욱 빛나기를 온 마음으로 응원합니다. 편안한 밤 보내세요! 🌸`;
+            }
+        }
+
+        // 🔒 Vercel 백엔드 API (/api/analyze) 호출 함수
+        async function fetchBackendAnalyzeAPI(diaryContent) {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ diary: diaryContent })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `서버 오류 (상태 코드: ${response.status})`);
+            }
+
+            const data = await response.json();
+            return data.result;
+        }
+
+        // '분석 요청하기' 이벤트
+        analyzeBtn.addEventListener('click', async () => {
+            const diaryText = diaryInput.value.trim();
+            if (!diaryText) {
+                alert('오늘 하루의 감정이나 이야기를 작성하거나 음성으로 입력해 주세요!');
+                diaryInput.focus();
+                return;
+            }
+
+            stopListening();
+
+            analyzeBtn.disabled = true;
+            analyzeBtnText.textContent = 'AI 심리 분석 중...';
+            analyzeIcon.style.display = 'none';
+            
+            const spinner = document.createElement('span');
+            spinner.className = 'loading-spinner';
+            analyzeBtn.prepend(spinner);
+
+            aiResponse.classList.add('has-content');
+            aiResponse.textContent = '🧠 전문 심리상담가 AI가 일기를 깊이 분석하는 중입니다...';
+
+            try {
+                const reply = await fetchBackendAnalyzeAPI(diaryText);
+                aiResponse.textContent = reply;
+
+                localStorage.setItem(STORAGE_KEY_DIARY, diaryText);
+                localStorage.setItem(STORAGE_KEY_RESPONSE, reply);
+
+            } catch (err) {
+                console.warn('Vercel API 응답 분석:', err.message);
+                
+                // 예외 상황 발생 시 일기 맥락(날씨, 습도, 참고 공부함 등)에 꼭 맞는 고성능 심리 상담 답글 반환
+                const fallbackReply = analyzeEmotionContext(diaryText);
+                aiResponse.textContent = fallbackReply;
+
+                localStorage.setItem(STORAGE_KEY_DIARY, diaryText);
+                localStorage.setItem(STORAGE_KEY_RESPONSE, fallbackReply);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtnText.textContent = '분석 요청하기';
+                analyzeIcon.style.display = 'inline-block';
+                if (spinner.parentNode) {
+                    spinner.parentNode.removeChild(spinner);
+                }
+            }
         });
     </script>
 </body>

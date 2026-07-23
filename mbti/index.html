@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나의 진짜 성격은? | MBTI 테스트</title>
+  <!-- Google Fonts 로드 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* 디자인 시스템 및 초기화 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', 'Noto Sans KR', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 20% 30%, #2e1a47 0%, #111119 50%, #0f1026 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 배경 장식용 그라데이션 글로우 볼 */
+    .glow-ball-1 {
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0) 70%);
+      border-radius: 50%;
+      filter: blur(40px);
+      z-index: 0;
+    }
+
+    .glow-ball-2 {
+      position: absolute;
+      bottom: -10%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0) 70%);
+      border-radius: 50%;
+      filter: blur(40px);
+      z-index: 0;
+    }
+
+    /* 메인 컨테이너 */
+    .container {
+      width: 90%;
+      max-width: 560px;
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 28px;
+      padding: 48px 32px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      position: relative;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 공통 화면 요소 */
+    .screen {
+      display: none;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 1. 시작 화면 */
+    .start-screen h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .start-screen p {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }
+
+    /* 버튼 스타일 */
+    .btn-primary {
+      width: 100%;
+      padding: 18px 24px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+      border: none;
+      border-radius: 18px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(168, 85, 247, 0.3);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(168, 85, 247, 0.5);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    /* 2. 질문 화면 */
+    .question-screen {
+      width: 100%;
+    }
+
+    /* 진행도 표시 바 */
+    .progress-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #a855f7, #6366f1);
+      border-radius: 3px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .question-number {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #a855f7;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .question-text {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      line-height: 1.5;
+      margin-bottom: 40px;
+      min-height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      word-break: keep-all;
+    }
+
+    /* 선택지 버튼들 */
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .btn-option {
+      width: 100%;
+      padding: 20px 24px;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      word-break: keep-all;
+    }
+
+    .btn-option::after {
+      content: '→';
+      opacity: 0;
+      transform: translateX(-10px);
+      transition: all 0.25s ease;
+      color: #a855f7;
+      font-weight: 700;
+    }
+
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(168, 85, 247, 0.4);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    .btn-option:hover::after {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .btn-option:active {
+      transform: translateY(1px);
+    }
+
+    /* 3. 임시 결과 화면 */
+    .result-screen h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      margin-bottom: 16px;
+    }
+
+    .result-screen p {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      margin-bottom: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 뒷배경 글로우 장식 -->
+  <div class="glow-ball-1"></div>
+  <div class="glow-ball-2"></div>
+
+  <!-- 메인 프레임 -->
+  <div class="container" id="app-container">
+    
+    <!-- 1. 시작 화면 -->
+    <div id="start-screen" class="screen active">
+      <h1>나의 진짜 성격은?</h1>
+      <p>8개의 간단한 질문으로 알아보는<br>나의 MBTI유형</p>
+      <button class="btn-primary" id="start-btn">테스트 시작하기</button>
+    </div>
+
+    <!-- 2. 질문 화면 -->
+    <div id="question-screen" class="screen">
+      <!-- 진행도 -->
+      <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      
+      <div class="question-number" id="question-number">Q1.</div>
+      <div class="question-text" id="question-text">질문 내용이 들어갈 자리입니다.</div>
+      
+      <!-- 선택지 컨테이너 -->
+      <div class="options-container">
+        <button class="btn-option" id="option-a">선택지 A</button>
+        <button class="btn-option" id="option-b">선택지 B</button>
+      </div>
+    </div>
+
+    <!-- 3. 임시 결과 화면 -->
+    <div id="result-screen" class="screen">
+      <h2>테스트 완료!</h2>
+      <p>당신의 MBTI 분석 결과를 계산하고 있습니다...</p>
+      <div class="mbti-result-temp" style="font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 24px;" id="temp-result-text">-</div>
+      <button class="btn-primary" onclick="restartTest()">다시 테스트하기</button>
+    </div>
+
+  </div>
+
+  <script>
+    // 질문 데이터 정의
+    const questions = [
+      {
+        num: 1,
+        text: "주말에 약속이 없다면?",
+        options: [
+          { text: "집에 있는다", type: "I" },
+          { text: "밖에 나가서 사람들을 만난다", type: "E" }
+        ]
+      },
+      {
+        num: 2,
+        text: "새로운 모임에 처음 참석했을 때 나의 행동은?",
+        options: [
+          { text: "먼저 다가가서 말을 건다", type: "E" },
+          { text: "조용히 자리를 지키며 말을 걸어주길 기다린다", type: "I" }
+        ]
+      },
+      {
+        num: 3,
+        text: "길을 걸어갈 때 평소 내 머릿속은?",
+        options: [
+          { text: "주변 풍경이나 실질적인 생각을 한다", type: "S" },
+          { text: "온갖 상상이나 공상, 깊은 생각에 빠진다", type: "N" }
+        ]
+      },
+      {
+        num: 4,
+        text: "소설이나 영화를 볼 때 내가 더 좋아하는 이야기는?",
+        options: [
+          { text: "현실적이고 개연성 있는 이야기", type: "S" },
+          { text: "기발하고 상상력이 넘치는 판타지 이야기", type: "N" }
+        ]
+      },
+      {
+        num: 5,
+        text: "친구가 \"나 속상해서 시험 망쳤어\"라고 말할 때 나의 대답은?",
+        options: [
+          { text: "많이 속상했겠다... 기분은 좀 어때?", type: "F" },
+          { text: "무슨 문제에서 실수했어? 공부 많이 못 했어?", type: "T" }
+        ]
+      },
+      {
+        num: 6,
+        text: "결정을 내려야 할 때 내가 더 중요하게 생각하는 것은?",
+        options: [
+          { text: "논리적인 사실과 객관적인 분석", type: "T" },
+          { text: "사람들의 감정과 주변 상황의 조화", type: "F" }
+        ]
+      },
+      {
+        num: 7,
+        text: "여행을 떠나기 전 계획을 세울 때 나의 스타일은?",
+        options: [
+          { text: "시간대별로 꼼꼼하게 일정을 계획한다", type: "J" },
+          { text: "가고 싶은 곳 몇 군데만 대략 정하고 떠난다", type: "P" }
+        ]
+      },
+      {
+        num: 8,
+        text: "약속 시간이나 마감 기한을 앞두었을 때 나의 모습은?",
+        options: [
+          { text: "여유 있게 미리 준비를 끝마친다", type: "J" },
+          { text: "벼락치기로 막판에 집중해서 처리한다", type: "P" }
+        ]
+      }
+    ];
+
+    // 상태 관리 변수
+    let currentQuestionIndex = 0;
+    let scores = {
+      E: 0, I: 0,
+      S: 0, N: 0,
+      T: 0, F: 0,
+      J: 0, P: 0
+    };
+
+    // DOM 요소 캐싱
+    const startScreen = document.getElementById('start-screen');
+    const questionScreen = document.getElementById('question-screen');
+    const resultScreen = document.getElementById('result-screen');
+    
+    const startBtn = document.getElementById('start-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const questionNumber = document.getElementById('question-number');
+    const questionText = document.getElementById('question-text');
+    const optionABtn = document.getElementById('option-a');
+    const optionBBtn = document.getElementById('option-b');
+    const tempResultText = document.getElementById('temp-result-text');
+
+    // 화면 전환 헬퍼 함수
+    function switchScreen(fromScreen, toScreen) {
+      fromScreen.classList.remove('active');
+      setTimeout(() => {
+        fromScreen.style.display = 'none';
+        toScreen.style.display = 'flex';
+        setTimeout(() => {
+          toScreen.classList.add('active');
+        }, 50);
+      }, 300);
+    }
+
+    // 테스트 시작
+    startBtn.addEventListener('click', () => {
+      switchScreen(startScreen, questionScreen);
+      loadQuestion();
+    });
+
+    // 질문 로드
+    function loadQuestion() {
+      const q = questions[currentQuestionIndex];
+      questionNumber.textContent = `Q${q.num}.`;
+      questionText.textContent = q.text;
+      optionABtn.textContent = q.options[0].text;
+      optionBBtn.textContent = q.options[1].text;
+      
+      // 진행도 바 업데이트
+      const progress = (currentQuestionIndex / questions.length) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
+
+    // 답변 선택 시 처리
+    function selectOption(optionIndex) {
+      const q = questions[currentQuestionIndex];
+      const selectedType = q.options[optionIndex].type;
+      
+      // 점수 가산
+      scores[selectedType]++;
+      
+      // 다음 질문 또는 결과 화면
+      currentQuestionIndex++;
+      if (currentQuestionIndex < questions.length) {
+        loadQuestion();
+      } else {
+        // 모든 질문 답변 완료 -> 결과 계산 및 이동
+        progressBar.style.width = '100%';
+        calculateResult();
+        switchScreen(questionScreen, resultScreen);
+      }
+    }
+
+    optionABtn.addEventListener('click', () => selectOption(0));
+    optionBBtn.addEventListener('click', () => selectOption(1));
+
+    // 결과 계산
+    function calculateResult() {
+      let mbti = "";
+      mbti += (scores.E >= scores.I) ? "E" : "I";
+      mbti += (scores.S >= scores.N) ? "S" : "N";
+      mbti += (scores.T >= scores.F) ? "T" : "F";
+      mbti += (scores.J >= scores.P) ? "J" : "P";
+      
+      tempResultText.textContent = mbti;
+    }
+
+    // 테스트 초기화 및 재시작
+    function restartTest() {
+      currentQuestionIndex = 0;
+      scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+      switchScreen(resultScreen, startScreen);
+    }
+  </script>
+</body>
+</html>
