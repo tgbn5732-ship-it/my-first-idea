@@ -674,7 +674,7 @@
         </section>
     </div>
 
-    <!-- JavaScript: Supabase Auth 및 전용 라우팅 연동 -->
+    <!-- JavaScript: Supabase Auth 및 이메일 리다이렉트 처리 -->
     <script>
         const authContainer = document.getElementById('authContainer');
         const appContainer = document.getElementById('appContainer');
@@ -796,7 +796,7 @@
                 if (error) {
                     showAuthMsg('로그인 실패: ' + (error.message.includes('Invalid') ? '이메일 또는 비밀번호가 올바르지 않거나 가입되지 않은 계정입니다.' : error.message));
                 } else {
-                    showAuthMsg('로그인 성공!', false);
+                    showAuthMsg('🎉 로그인 성공!', false);
                 }
             } catch (err) {
                 loginBtn.disabled = false;
@@ -833,7 +833,10 @@
 
                 const { data, error } = await client.auth.signUp({ 
                     email: email, 
-                    password: password 
+                    password: password,
+                    options: {
+                        emailRedirectTo: window.location.origin
+                    }
                 });
 
                 signUpBtn.disabled = false;
@@ -842,7 +845,7 @@
                 if (error) {
                     showAuthMsg('회원가입 실패: ' + error.message, true);
                 } else {
-                    showAuthMsg('🎉 회원가입 성공! 이제 [로그인] 버튼을 눌러 들어오세요.', false);
+                    showAuthMsg('🎉 회원가입 신청 완료! 이메일 확인 메일의 링크를 클릭 후 [로그인]해 주세요.', false);
                 }
             } catch (err) {
                 signUpBtn.disabled = false;
