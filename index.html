@@ -674,7 +674,7 @@
         </section>
     </div>
 
-    <!-- JavaScript: Supabase Auth 및 상세 진단 시스템 -->
+    <!-- JavaScript: Supabase Auth 및 비동기 복구 기능 -->
     <script>
         const authContainer = document.getElementById('authContainer');
         const appContainer = document.getElementById('appContainer');
@@ -716,9 +716,9 @@
             if (supabaseClient) return supabaseClient;
 
             try {
-                let res = await fetch('/api/config.js').catch(() => null);
+                let res = await fetch('/api/config').catch(() => null);
                 if (!res || !res.ok) {
-                    res = await fetch('/api/config').catch(() => null);
+                    res = await fetch('/api/config.js').catch(() => null);
                 }
 
                 if (res && res.ok) {
@@ -731,13 +731,14 @@
                         }
                     } else {
                         const keysStr = config.foundKeys && config.foundKeys.length > 0 ? config.foundKeys.join(', ') : '없음';
-                        showAuthMsg('Supabase URL/Key 미감지. (Vercel 감지된 키: ' + keysStr + ')');
+                        showAuthMsg('Vercel 환경변수에 Supabase 키 미감지 (감지된 키: ' + keysStr + ')');
                     }
                 } else {
-                    showAuthMsg('서버리스 API(/api/config) 응답 오류입니다.');
+                    const statusStr = res ? `[상태: ${res.status}]` : '[네트워크 차단]';
+                    showAuthMsg('서버리스 API(/api/config) 통신 오류 ' + statusStr);
                 }
             } catch (e) {
-                showAuthMsg('Supabase 설정 연결 예외: ' + e.message);
+                showAuthMsg('Supabase 설정 통신 예외: ' + e.message);
             }
             return null;
         }
@@ -800,7 +801,7 @@
             } catch (err) {
                 loginBtn.disabled = false;
                 loginBtn.textContent = '로그인';
-                showAuthMsg('로그인 처리 중 오류 발생: ' + err.message);
+                showAuthMsg('로그인 예외: ' + err.message);
             }
         });
 
