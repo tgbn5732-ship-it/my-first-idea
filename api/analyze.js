@@ -1,27 +1,31 @@
 // Vercel Serverless Function: api/analyze.js
-// Gemini API로 감정을 분석하고, 결과를 Serverless Redis(REDIS_URL)에 고유 시간 키로 자동 저장합니다.
+// Gemini API로 감정을 분석하고, 결과를 Serverless Redis(REDIS_URL)에 고유 시간 키로 저장합니다.
 
 import Redis from 'ioredis';
 
-// 싱글톤 Redis 클라이언트 생성 함수
 let redisClient = null;
 
 function getRedisClient() {
     const redisUrl = process.env.REDIS_URL || process.env.STORAGE_URL || process.env.STORAGE_REDIS_URL || process.env.KV_URL;
     if (!redisUrl) {
+        console.log('[Redis Log] REDIS_URL 환경변수를 찾을 수 없습니다.');
         return null;
     }
     if (!redisClient) {
-        redisClient = new Redis(redisUrl, {
-            maxRetriesPerRequest: 1,
+        const options = {
+            maxRetriesPerRequest: 2,
             connectTimeout: 5000,
             lazyConnect: true
-        });
+        };
+        // rediss:// (TLS) 대응
+        if (redisUrl.startsWith('rediss://')) {
+            options.tls = { rejectUnauthorized: false };
+        }
+        redisClient = new Redis(redisUrl, options);
     }
     return redisClient;
 }
 
-// 현재 시간 기준 고유 키 생성 함수 (예: diary-20260723152000123)
 function generateDiaryKey() {
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -35,7 +39,6 @@ function generateDiaryKey() {
 }
 
 export default async function handler(req, res) {
-    // 1. CORS 헤더 설정
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -53,7 +56,6 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 2. 일기 내용 가져오기
         let bodyData = req.body;
         if (typeof bodyData === 'string') {
             try { bodyData = JSON.parse(bodyData); } catch (e) {}
@@ -65,7 +67,6 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: '분석할 일기 내용을 입력해 주세요.' });
         }
 
-        // 3. 환경변수 GEMINI_API_KEY 확인
         const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
@@ -75,7 +76,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // 4. 심리상담가 프롬프트 정의
+        // 심리상담가 프롬프트
         const prompt = `너는 타인의 마음 깊은 곳을 섬세하게 읽어내는 공감 전문 심리상담가야. 
 아래 사용자가 적은 일기를 정밀 분석해줘.
 
@@ -93,7 +94,6 @@ export default async function handler(req, res) {
 
 [응원 메시지]`;
 
-        // 5. Gemini API 호출
         const flashUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const geminiResponse = await fetch(flashUrl, {
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
         const trimmedReply = aiReply.trim();
         const diaryKey = generateDiaryKey();
 
-        // 6. Serverless Redis (REDIS_URL)에 일기 내용과 AI 답변 묶음 저장
+        // Serverless Redis 저장 시도
         try {
             const redis = getRedisClient();
             if (redis) {
@@ -145,15 +145,12 @@ export default async function handler(req, res) {
                 };
 
                 await redis.set(diaryKey, JSON.stringify(recordData));
-                console.log(`[Redis 저장 완료] Key: ${diaryKey}`);
-            } else {
-                console.log('REDIS_URL 환경변수를 찾을 수 없어 DB 저장을 스킵합니다.');
+                console.log(`[Redis 저장 성공] Key: ${diaryKey}`);
             }
         } catch (dbError) {
-            console.error('[Redis 저장 예외 발생]:', dbError.message);
+            console.error('[Redis 저장 예외]:', dbError.message);
         }
 
-        // 7. 성공 결과 반환 (생성된 저장 키 포함)
         return res.status(200).json({
             result: trimmedReply,
             savedKey: diaryKey

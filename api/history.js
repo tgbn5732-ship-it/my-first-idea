@@ -11,17 +11,20 @@ function getRedisClient() {
         return null;
     }
     if (!redisClient) {
-        redisClient = new Redis(redisUrl, {
-            maxRetriesPerRequest: 1,
+        const options = {
+            maxRetriesPerRequest: 2,
             connectTimeout: 5000,
             lazyConnect: true
-        });
+        };
+        if (redisUrl.startsWith('rediss://')) {
+            options.tls = { rejectUnauthorized: false };
+        }
+        redisClient = new Redis(redisUrl, options);
     }
     return redisClient;
 }
 
 export default async function handler(req, res) {
-    // CORS 헤더 설정
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -49,7 +52,7 @@ export default async function handler(req, res) {
             await redis.connect();
         }
 
-        // 1. 'diary-*' 패턴에 맞는 키 검색 (scanStream 사용으로 비동기 안전 검색)
+        // 'diary-*' 패턴 검색
         const stream = redis.scanStream({
             match: 'diary-*',
             count: 100
@@ -66,7 +69,6 @@ export default async function handler(req, res) {
             return res.status(200).json({ items: [] });
         }
 
-        // 2. 검색된 모든 키의 일기 및 AI 답변 데이터 일괄 가져오기 (MGET)
         const values = await redis.mget(...keys);
         
         const items = values
@@ -80,7 +82,7 @@ export default async function handler(req, res) {
             })
             .filter(item => item && (item.diary || item.result));
 
-        // 3. 최신순 정렬 (생성 시각 또는 고유 키 ID 기준 내림차순)
+        // 최신순 정렬 (내림차순)
         items.sort((a, b) => {
             const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
             const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
