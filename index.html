@@ -221,6 +221,7 @@
             text-align: center;
             display: none;
             white-space: pre-wrap;
+            word-break: break-word;
         }
 
         .auth-message.error {
@@ -610,7 +611,7 @@
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
                     <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
                     <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                 </svg>
                 Google로 로그인
             </button>
@@ -707,7 +708,7 @@
 
         let supabaseClient = null;
 
-        // 1. Supabase 클라이언트 초기화 함수
+        // Supabase 클라이언트 동적 로딩 함수
         async function getOrCreateSupabaseClient() {
             if (supabaseClient) return supabaseClient;
 
@@ -723,7 +724,7 @@
                     }
                 }
             } catch (e) {
-                console.warn('Supabase 백엔드 config 로딩 실패:', e);
+                console.warn('Supabase config 호출 예외:', e);
             }
             return null;
         }
@@ -759,9 +760,10 @@
             }
             authMessage.className = 'auth-message ' + (isError ? 'error' : 'success');
             authMessage.textContent = msg;
+            authMessage.style.display = 'block';
         }
 
-        // 로그인 실행
+        // 로그인 이벤트
         loginBtn.addEventListener('click', async () => {
             const email = authEmail.value.trim();
             const password = authPassword.value.trim();
@@ -773,29 +775,35 @@
 
             loginBtn.disabled = true;
             loginBtn.textContent = '로그인 중...';
-            showAuthMsg('');
+            showAuthMsg('Supabase 서버로 로그인 요청 중...', false);
 
-            const client = await getOrCreateSupabaseClient();
-            if (!client) {
+            try {
+                const client = await getOrCreateSupabaseClient();
+                if (!client) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '로그인';
+                    showAuthMsg('Supabase 설정 연결 실패. 잠시 후 다시 시도해 주세요.');
+                    return;
+                }
+
+                const { data, error } = await client.auth.signInWithPassword({ email, password });
+
                 loginBtn.disabled = false;
                 loginBtn.textContent = '로그인';
-                showAuthMsg('Supabase 설정 정보를 불러올 수 없습니다. 환경변수를 확인해 주세요.');
-                return;
-            }
 
-            const { data, error } = await client.auth.signInWithPassword({ email, password });
-
-            loginBtn.disabled = false;
-            loginBtn.textContent = '로그인';
-
-            if (error) {
-                showAuthMsg('로그인 실패: ' + (error.message.includes('Invalid') ? '이메일 또는 비밀번호가 올바르지 않습니다.' : error.message));
-            } else {
-                showAuthMsg('로그인 성공!', false);
+                if (error) {
+                    showAuthMsg('로그인 실패: ' + (error.message.includes('Invalid') ? '이메일 또는 비밀번호가 올바르지 않거나 가입되지 않은 계정입니다.' : error.message));
+                } else {
+                    showAuthMsg('로그인 성공!', false);
+                }
+            } catch (err) {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '로그인';
+                showAuthMsg('로그인 처리 중 오류 발생: ' + err.message);
             }
         });
 
-        // 회원가입 실행
+        // 회원가입 이벤트
         signUpBtn.addEventListener('click', async () => {
             const email = authEmail.value.trim();
             const password = authPassword.value.trim();
@@ -812,33 +820,43 @@
 
             signUpBtn.disabled = true;
             signUpBtn.textContent = '회원가입 중...';
-            showAuthMsg('');
+            showAuthMsg('Supabase 서버에 계정 생성 중...', false);
 
-            const client = await getOrCreateSupabaseClient();
-            if (!client) {
+            try {
+                const client = await getOrCreateSupabaseClient();
+                if (!client) {
+                    signUpBtn.disabled = false;
+                    signUpBtn.textContent = '회원가입';
+                    showAuthMsg('Supabase 설정 정보 로딩 중입니다. 잠시 후 다시 시도해 주세요.');
+                    return;
+                }
+
+                const { data, error } = await client.auth.signUp({ 
+                    email: email, 
+                    password: password 
+                });
+
                 signUpBtn.disabled = false;
                 signUpBtn.textContent = '회원가입';
-                showAuthMsg('Supabase 설정 정보를 불러올 수 없습니다.');
-                return;
-            }
 
-            const { data, error } = await client.auth.signUp({ email, password });
-
-            signUpBtn.disabled = false;
-            signUpBtn.textContent = '회원가입';
-
-            if (error) {
-                showAuthMsg('회원가입 실패: ' + error.message);
-            } else {
-                showAuthMsg('🎉 회원가입 신청 완료! 이메일 확인 후 로그인해 주세요.', false);
+                if (error) {
+                    showAuthMsg('회원가입 실패: ' + error.message, true);
+                } else {
+                    showAuthMsg('🎉 회원가입 성공! 이제 [로그인] 버튼을 눌러 들어오세요.', false);
+                }
+            } catch (err) {
+                signUpBtn.disabled = false;
+                signUpBtn.textContent = '회원가입';
+                showAuthMsg('회원가입 예외 발생: ' + err.message, true);
             }
         });
 
-        // Google 로그인 실행
+        // Google 로그인 이벤트
         googleBtn.addEventListener('click', async () => {
+            showAuthMsg('Google 로그인 페이지로 이동합니다...', false);
             const client = await getOrCreateSupabaseClient();
             if (!client) {
-                showAuthMsg('Supabase 클라이언트를 초기화할 수 없습니다.');
+                showAuthMsg('Supabase 연결에 실패했습니다.');
                 return;
             }
 
@@ -854,7 +872,7 @@
             }
         });
 
-        // 로그아웃 실행
+        // 로그아웃 이벤트
         logoutBtn.addEventListener('click', async () => {
             const client = await getOrCreateSupabaseClient();
             if (client) {
