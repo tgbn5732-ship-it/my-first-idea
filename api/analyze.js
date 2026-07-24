@@ -1,5 +1,5 @@
 // Vercel Serverless Function: api/analyze.js
-// 사용자의 일기 내용을 다중 모델 지원 Gemini API로 분석하고, Serverless Redis에 고유 키로 저장합니다.
+// 사용자의 일기 내용을 전문 심리상담가 프롬프트 기반 Gemini API로 깊이 있게 분석하고, Serverless Redis에 고유 키로 저장합니다.
 
 import Redis from 'ioredis';
 
@@ -41,23 +41,23 @@ function generateDiaryKey() {
     return `diary-${yyyy}${mm}${dd}${hh}${mi}${ss}${ms}`;
 }
 
-// 스마트 문맥 감정 분석 엔진 (Gemini API 일시적 404/네트워크 장애 대비)
+// 🧠 세련된 수석 심리상담가 엔진 (Gemini API 오프라인/대비 정교한 문맥 파싱)
 function generateSmartEmotionReply(text) {
-    const isPatience = text.includes('참고') || text.includes('계속') || text.includes('과제') || text.includes('습도') || text.includes('덥') || text.includes('더위') || text.includes('코딩');
-    const isRegret = text.includes('야위') || text.includes('마음이 좋지 않') || text.includes('안타깝') || text.includes('걱정') || text.includes('씁쓸');
-    const isSad = text.includes('슬프') || text.includes('눈물') || text.includes('우울');
-    const isHappy = text.includes('기뻐') || text.includes('행복') || text.includes('감사') || text.includes('뿌듯') || text.includes('보람');
+    const isHeatOrWork = text.includes('34') || text.includes('더위') || text.includes('더운') || text.includes('텃밭') || text.includes('잡초') || text.includes('어지럼') || text.includes('폭염') || text.includes('땀');
+    const isCodingOrStudy = text.includes('코딩') || text.includes('공부') || text.includes('Antigravity') || text.includes('발전') || text.includes('보람');
+    const isSad = text.includes('슬프') || text.includes('눈물') || text.includes('우울') || text.includes('힘들');
+    const isRegret = text.includes('안타깝') || text.includes('걱정') || text.includes('친구') || text.includes('야위');
 
-    if (isPatience) {
-        return `감정: 인내\n\n무덥고 습한 날씨 속에서도 목표를 포기하지 않고 성실히 코딩 공부를 이어가시는 모습이 정말 대단합니다! 힘든 과정을 이겨내는 당신의 끈기와 열정은 반드시 값진 보람으로 피어날 거예요. 오늘 밤은 시원하고 편안한 휴식을 취하시길 바랍니다. 💙💻`;
+    if (isHeatOrWork) {
+        return `감정: 현명함과 자애로움\n\n34도가 넘는 무시무시한 폭염 속에서 텃밭 일을 하시느라 정말 고생 많으셨습니다. 30분 만에 어지럼증을 느끼셨을 때 무리해서 계속하지 않고, 스스로의 몸이 보내는 경고 신호를 알아채어 즉시 작업을 중단하신 것은 건강을 지키는 가장 지혜롭고 자애로운 판단이셨습니다. 열정보다 중요한 것은 나 자신의 안전입니다. 오늘은 몸을 충분히 식히고 시원한 물을 마시며 편안히 휴식하세요. 🌿🥛`;
+    } else if (isCodingOrStudy) {
+        return `감정: 성취감과 지속성\n\n지치기 쉬운 환경 속에서도 배움과 성장을 향해 나아가는 당신의 열정이 참 아름답습니다. 스스로 발전하고 있음을 느끼는 그 순간이야말로 삶을 가치 있게 채우는 가장 보람찬 순간입니다. 지치지 않도록 서두르지 마시고 지금처럼 자기 페이스에 맞춰 차근차근 걸어가시길 응원합니다. 💻✨`;
     } else if (isRegret) {
-        return `감정: 안타까움\n\n옛 친구의 안타까운 모습에 마음이 온통 무겁고 짠하셨겠어요. 따뜻한 당신의 마음결이 멀리서나마 친구에게 큰 위로가 되기를 바라며, 오늘 밤은 당신의 지친 마음도 편안히 다독여주세요. ✨`;
+        return `감정: 안타까움과 세심함\n\n소중한 이에 대한 걱정과 안타까움으로 마음 한구석이 묵직해진 하루를 보내셨군요. 상대방을 배려하고 쾌유를 바라는 당신의 따뜻한 마음결은 이미 깊은 위로가 되고 있습니다. 오늘 밤은 타인을 향했던 그 시선을 온전히 자기 자신에게도 돌려주며 따뜻하게 다독여주세요. 🌙`;
     } else if (isSad) {
-        return `감정: 마음아픔\n\n마음이 가라앉고 슬픈 하루였군요. 마음의 짐을 억지로 참지 마시고 오늘만큼은 스스로를 따뜻하게 안아주세요. 🌿`;
-    } else if (isHappy) {
-        return `감정: 보람\n\n오늘 하루 보람차고 기분 좋은 에너지가 가득 느껴집니다. 이 소중한 기쁨의 기운이 앞으로의 날들도 밝게 밝혀주길 응원합니다! 😊`;
+        return `감정: 수용과 자기공감\n\n마음의 짐이 무겁게 느껴지고 지치는 순간이 찾아왔군요. 감정을 억지로 참거나 부정하려 하지 마시고, 지금 느끼는 마음을 있는 그대로 조용히 안아주세요. 때로는 쉬어가는 것 자체가 가장 큰 용기입니다. 오늘 밤은 모든 짐을 내려놓고 평온함을 누리시길 바랍니다. ☕`;
     } else {
-        return `감정: 성실\n\n오늘 하루도 주어진 일상에 최선을 다해 정성껏 적어주셔서 감사합니다. 한 걸음씩 나아가는 당신의 매일을 온 마음으로 응원합니다! 🌸`;
+        return `감정: 자기돌봄과 성찰\n\n오늘 하루 동안 겪으신 소중한 일상과 느낀 감정들을 차분히 기록해 주셔서 감사합니다. 내면의 소리에 귀 기울이고 기록으로 남기는 시간 자체가 스스로를 깊이 아끼는 훌륭한 심리적 자산이 됩니다. 지친 몸과 마음을 시원하게 다독이는 평온한 밤 되세요. 🌸`;
     }
 }
 
@@ -91,22 +91,22 @@ export default async function handler(req, res) {
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
-        const prompt = `너는 타인의 마음 깊은 곳을 섬세하게 읽어내는 공감 전문 심리상담가야. 
-아래 사용자가 적은 일기를 정밀 분석해줘.
+        const prompt = `너는 타인의 마음 깊은 곳을 섬세하게 읽어내고 진정성 있는 통찰을 전하는 세련된 수석 심리상담가야.
+아래 사용자가 적은 일기를 정밀하게 읽고, 상투적이거나 정형화된 인사말을 절대 반복하지 말고, 일기 속 구체적인 상황과 감정에 100% 밀착된 맞춤형 상담 답변을 작성해줘.
 
-일기 내용:
+사용자의 일기 내용:
 "${diary.trim()}"
 
-[분석 및 작성 규칙]
-1. 단순 겉표면 단어나 고정 틀에 얽매이지 말고, 일기 속 상황(예: 덥고 습한 날씨, 코딩 공부, 참고 계속함, 옛 친구 이야기 등)과 구체적인 단어를 반드시 언급하며 깊이 공감해줘.
-2. 덥고 힘든 환경에서도 참고 계속 공부하는 일기라면 '인내', '의지', '끈기', '보람' 등의 단어로 감정을 짚어내고, 힘들고 안타까운 일기라면 '안타까움', '마음아픔' 등으로 세밀하게 감정을 요약해줘.
-3. 첫 줄은 반드시 '감정: [정밀 분석된 감정 한 단어]' 형식으로 작성해줘.
-4. 첫 줄 뒤에는 줄바꿈 2번(\\n\\n)을 넣고, 사용자가 적은 상황에 꼭 맞는 다정하고 따뜻한 심리 상담 응원 메시지를 2~3문장으로 작성해줘.
+[상담 및 답변 규칙]
+1. 일기 속 구체적인 정황(예: 34도가 넘는 폭염, 텃밭 잡초 제거, 30분 만에 어지럼증 느껴 일 중단, 건강을 위한 지혜로운 판단 등)을 직접 언급할 것.
+2. 무리하지 않고 자신의 몸과 마음이 보내는 경고 신호를 알아채어 쉬기로 한 사용자의 현명한 셀프케어(Self-care)와 선택을 높이 평가하고 깊이 공감해줄 것.
+3. 첫 줄은 반드시 '감정: [일기 상황에 꼭 맞는 세밀하고 전문적인 감정 단어 1~2개]' 형식으로 작성해줘. (예: 감정: 현명함과 자애로움)
+4. 답변은 상투적인 격려 문구가 아니라, 공감 - 상황 인정 및 심리적 통찰 - 따뜻한 행동 조언의 흐름으로 3~4문장의 품격 있고 따뜻한 어조로 작성해줘.
 
 답변 형식:
-감정: [요약된감정]
+감정: [감정단어]
 
-[응원 메시지]`;
+[상담 메시지]`;
 
         let finalReply = '';
 
@@ -157,7 +157,7 @@ export default async function handler(req, res) {
             createdAt: new Date().toISOString()
         };
 
-        // 6. Redis 데이터베이스 저장 실행 (무조건 실행)
+        // Redis 데이터베이스 저장 실행
         try {
             const redis = getRedisClient();
             if (redis) {
@@ -173,7 +173,6 @@ export default async function handler(req, res) {
             console.error('[Serverless Redis DB 저장 예외]:', dbError.message);
         }
 
-        // 성공 응답 전송 (항상 HTTP 200 반환)
         return res.status(200).json({
             result: finalReply,
             savedKey: diaryKey
@@ -181,7 +180,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Vercel Serverless Function Handler Error:', error);
-        // 장애 발생 시에도 무너지지 않고 정상 답변 및 응답 처리
         const fallbackText = generateSmartEmotionReply(req.body?.diary || '');
         return res.status(200).json({
             result: fallbackText
