@@ -557,6 +557,125 @@
             border: 1px dashed #cbd5e1;
         }
 
+        /* 💬 실시간 채팅 섹션 스타일 */
+        .chat-section {
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 28px;
+            margin-top: 28px;
+        }
+
+        .chat-box {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-messages {
+            height: 280px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 6px;
+        }
+
+        .chat-bubble-group {
+            display: flex;
+            flex-direction: column;
+            max-width: 82%;
+        }
+
+        .chat-bubble-group.mine {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .chat-bubble-group.others {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .chat-user-email {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 4px;
+            padding: 0 4px;
+        }
+
+        .chat-bubble {
+            padding: 10px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word;
+            white-space: pre-wrap;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .chat-bubble-group.mine .chat-bubble {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-bubble-group.others .chat-bubble {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-time {
+            font-size: 10.5px;
+            color: #94a3b8;
+            margin-top: 3px;
+            padding: 0 4px;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input-row input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1.5px solid #cbd5e1;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .chat-input-row input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .btn-send-chat {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 10px rgba(99, 102, 241, 0.25);
+        }
+
+        .btn-send-chat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 14px rgba(99, 102, 241, 0.35);
+        }
+
         .loading-spinner {
             display: inline-block;
             width: 18px;
@@ -663,6 +782,7 @@
             <div id="aiResponse" class="response-box">여기에 AI의 답변이 표시됩니다.</div>
         </section>
 
+        <!-- 📜 나의 일기 히스토리 섹션 -->
         <section class="history-section">
             <h2>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
@@ -672,9 +792,26 @@
                 <div class="history-loading">✨ 클라우드에서 저장된 일기 목록을 불러오는 중...</div>
             </div>
         </section>
+
+        <!-- 💬 실시간 소통 채팅 섹션 (Supabase Realtime) -->
+        <section class="chat-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                실시간 소통 채팅방
+            </h2>
+            <div class="chat-box">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="history-loading">✨ 실시간 메시지를 연결하는 중...</div>
+                </div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="메시지를 입력하세요 (Enter 누르면 전송)..." autocomplete="off">
+                    <button type="button" id="sendChatBtn" class="btn-send-chat">전송</button>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <!-- JavaScript: Supabase Auth 및 이메일 리다이렉트 처리 -->
+    <!-- JavaScript: Supabase Auth & Realtime Chat 연동 -->
     <script>
         const authContainer = document.getElementById('authContainer');
         const appContainer = document.getElementById('appContainer');
@@ -697,10 +834,17 @@
         const clearBtn = document.getElementById('clearBtn');
         const historyList = document.getElementById('historyList');
 
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatBtn = document.getElementById('sendChatBtn');
+
         const STORAGE_KEY_DIARY = 'saved_diary_content';
         const STORAGE_KEY_RESPONSE = 'saved_ai_response';
 
         let supabaseClient = null;
+        let currentUserId = null;
+        let currentUserEmail = null;
+        let realtimeChannel = null;
 
         function showAuthMsg(msg, isError = true) {
             if (!msg) {
@@ -759,13 +903,142 @@
             if (session && session.user) {
                 authContainer.style.display = 'none';
                 appContainer.style.display = 'block';
-                userEmailText.textContent = session.user.email || '사용자 님';
+                currentUserId = session.user.id;
+                currentUserEmail = session.user.email || '익명 사용자';
+                userEmailText.textContent = currentUserEmail;
+                
                 fetchDiaryHistory();
+                initRealtimeChat(session);
             } else {
                 authContainer.style.display = 'block';
                 appContainer.style.display = 'none';
+                currentUserId = null;
+                currentUserEmail = null;
             }
         }
+
+        // 💬 Supabase Realtime 채팅 구독 및 데이터 초기화
+        async function initRealtimeChat(session) {
+            const client = await getOrCreateSupabaseClient();
+            if (!client) return;
+
+            fetchInitialMessages(client);
+
+            if (realtimeChannel) {
+                client.removeChannel(realtimeChannel);
+            }
+
+            realtimeChannel = client
+                .channel('public:messages')
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'messages' },
+                    (payload) => {
+                        appendChatMessage(payload.new);
+                    }
+                )
+                .subscribe();
+        }
+
+        async function fetchInitialMessages(client) {
+            try {
+                const { data, error } = await client
+                    .from('messages')
+                    .select('*')
+                    .order('created_at', { ascending: true })
+                    .limit(60);
+
+                chatMessages.innerHTML = '';
+
+                if (error) {
+                    chatMessages.innerHTML = `<div class="history-empty">실시간 메시지 연결 대기 중 (${error.message})</div>`;
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    chatMessages.innerHTML = '<div class="history-empty">아직 보낸 실시간 메시지가 없습니다.<br>첫 메시지를 입력해 보세요! 💬</div>';
+                    return;
+                }
+
+                data.forEach(msg => appendChatMessage(msg));
+            } catch (e) {
+                chatMessages.innerHTML = `<div class="history-empty">실시간 연결 오류: ${e.message}</div>`;
+            }
+        }
+
+        function appendChatMessage(msg) {
+            const emptyEl = chatMessages.querySelector('.history-empty');
+            if (emptyEl) emptyEl.remove();
+
+            const isMine = msg.user_id === currentUserId || msg.user_email === currentUserEmail;
+            const groupClass = isMine ? 'mine' : 'others';
+            const formattedTime = formatChatTime(msg.created_at);
+
+            const groupDiv = document.createElement('div');
+            groupDiv.className = `chat-bubble-group ${groupClass}`;
+
+            groupDiv.innerHTML = `
+                <div class="chat-user-email">${escapeHtml(msg.user_email || '익명')}</div>
+                <div class="chat-bubble">${escapeHtml(msg.content || '')}</div>
+                <div class="chat-time">${formattedTime}</div>
+            `;
+
+            chatMessages.appendChild(groupDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatChatTime(dateString) {
+            if (!dateString) return '';
+            try {
+                const d = new Date(dateString);
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mm = String(d.getMinutes()).padStart(2, '0');
+                return `${hh}:${mm}`;
+            } catch (e) {
+                return '';
+            }
+        }
+
+        async function sendChatMessage() {
+            const content = chatInput.value.trim();
+            if (!content) return;
+
+            const client = await getOrCreateSupabaseClient();
+            if (!client) {
+                alert('Supabase 연결 상태를 확인해 주세요.');
+                return;
+            }
+
+            chatInput.value = '';
+
+            try {
+                const insertPayload = {
+                    content: content,
+                    user_email: currentUserEmail
+                };
+                if (currentUserId) {
+                    insertPayload.user_id = currentUserId;
+                }
+
+                const { data, error } = await client
+                    .from('messages')
+                    .insert([insertPayload]);
+
+                if (error) {
+                    console.error('메시지 전송 오류:', error.message);
+                }
+            } catch (err) {
+                console.error('메시지 전송 예외:', err.message);
+            }
+        }
+
+        sendChatBtn.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
 
         loginBtn.addEventListener('click', async () => {
             const email = authEmail.value.trim();
