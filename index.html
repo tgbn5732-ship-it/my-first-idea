@@ -793,11 +793,11 @@
             </div>
         </section>
 
-        <!-- 💬 실시간 소통 채팅 섹션 (Supabase Realtime) -->
+        <!-- 💬 실시간 채팅 섹션 (Supabase Realtime) -->
         <section class="chat-section">
             <h2>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                실시간 소통 채팅방
+                실시간 채팅
             </h2>
             <div class="chat-box">
                 <div id="chatMessages" class="chat-messages">
@@ -917,7 +917,6 @@
             }
         }
 
-        // 💬 Supabase Realtime 채팅 구독 및 데이터 초기화
         async function initRealtimeChat(session) {
             const client = await getOrCreateSupabaseClient();
             if (!client) return;
