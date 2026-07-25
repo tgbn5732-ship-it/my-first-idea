@@ -676,6 +676,14 @@
             box-shadow: 0 5px 14px rgba(99, 102, 241, 0.35);
         }
 
+        .chat-status-msg {
+            font-size: 12px;
+            color: #ef4444;
+            text-align: center;
+            margin-top: -6px;
+            display: none;
+        }
+
         .loading-spinner {
             display: inline-block;
             width: 18px;
@@ -807,6 +815,7 @@
                     <input type="text" id="chatInput" placeholder="메시지를 입력하세요 (Enter 누르면 전송)..." autocomplete="off">
                     <button type="button" id="sendChatBtn" class="btn-send-chat">전송</button>
                 </div>
+                <div id="chatStatusMsg" class="chat-status-msg"></div>
             </div>
         </section>
     </div>
@@ -837,6 +846,7 @@
         const chatMessages = document.getElementById('chatMessages');
         const chatInput = document.getElementById('chatInput');
         const sendChatBtn = document.getElementById('sendChatBtn');
+        const chatStatusMsg = document.getElementById('chatStatusMsg');
 
         const STORAGE_KEY_DIARY = 'saved_diary_content';
         const STORAGE_KEY_RESPONSE = 'saved_ai_response';
@@ -854,6 +864,16 @@
             authMessage.className = 'auth-message ' + (isError ? 'error' : 'success');
             authMessage.textContent = msg;
             authMessage.style.display = 'block';
+        }
+
+        function showChatError(msg) {
+            if (!msg) {
+                chatStatusMsg.style.display = 'none';
+                return;
+            }
+            chatStatusMsg.textContent = msg;
+            chatStatusMsg.style.display = 'block';
+            setTimeout(() => { chatStatusMsg.style.display = 'none'; }, 4000);
         }
 
         async function getOrCreateSupabaseClient() {
@@ -927,8 +947,9 @@
                 client.removeChannel(realtimeChannel);
             }
 
+            // Realtime 멀티 룸 및 postgres_changes 스키마 바인딩
             realtimeChannel = client
-                .channel('public:messages')
+                .channel('chat_room')
                 .on(
                     'postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'messages' },
@@ -936,7 +957,9 @@
                         appendChatMessage(payload.new);
                     }
                 )
-                .subscribe();
+                .subscribe((status) => {
+                    console.log('[Supabase Realtime Status]:', status);
+                });
         }
 
         async function fetchInitialMessages(client) {
@@ -950,7 +973,7 @@
                 chatMessages.innerHTML = '';
 
                 if (error) {
-                    chatMessages.innerHTML = `<div class="history-empty">실시간 메시지 연결 대기 중 (${error.message})</div>`;
+                    chatMessages.innerHTML = `<div class="history-empty">메시지 연결 대기 중 (${error.message})</div>`;
                     return;
                 }
 
@@ -969,12 +992,18 @@
             const emptyEl = chatMessages.querySelector('.history-empty');
             if (emptyEl) emptyEl.remove();
 
-            const isMine = msg.user_id === currentUserId || msg.user_email === currentUserEmail;
+            // 중복 메시지 DOM 방지
+            if (msg.id && document.getElementById(`msg-${msg.id}`)) {
+                return;
+            }
+
+            const isMine = (currentUserId && msg.user_id === currentUserId) || (currentUserEmail && msg.user_email === currentUserEmail);
             const groupClass = isMine ? 'mine' : 'others';
             const formattedTime = formatChatTime(msg.created_at);
 
             const groupDiv = document.createElement('div');
             groupDiv.className = `chat-bubble-group ${groupClass}`;
+            if (msg.id) groupDiv.id = `msg-${msg.id}`;
 
             groupDiv.innerHTML = `
                 <div class="chat-user-email">${escapeHtml(msg.user_email || '익명')}</div>
@@ -1013,7 +1042,7 @@
             try {
                 const insertPayload = {
                     content: content,
-                    user_email: currentUserEmail
+                    user_email: currentUserEmail || '익명 사용자'
                 };
                 if (currentUserId) {
                     insertPayload.user_id = currentUserId;
@@ -1021,13 +1050,18 @@
 
                 const { data, error } = await client
                     .from('messages')
-                    .insert([insertPayload]);
+                    .insert([insertPayload])
+                    .select();
 
                 if (error) {
                     console.error('메시지 전송 오류:', error.message);
+                    showChatError('메시지 전송 실패: ' + error.message);
+                } else if (data && data.length > 0) {
+                    appendChatMessage(data[0]);
                 }
             } catch (err) {
                 console.error('메시지 전송 예외:', err.message);
+                showChatError('전송 예외: ' + err.message);
             }
         }
 
