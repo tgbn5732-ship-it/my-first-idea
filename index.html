@@ -773,7 +773,6 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
 
-        /* 📎 클립 아이콘 버튼 & ✈️ 전송 아이콘 버튼 스타일 */
         .btn-attach-chat {
             padding: 11px 13px;
             border: 1.5px solid #cbd5e1;
@@ -1180,7 +1179,7 @@
             }
         });
 
-        // 📎 클립 버튼 클릭 시 이미지 파일 선택창 열기 및 chat-images 버킷 업로드
+        // 📎 교재 요구사항 1~5번: 채팅 이미지 첨부 업로드 및 ![image](URL) 렌더링 로직
         attachImageBtn.addEventListener('click', () => chatFileInput.click());
 
         chatFileInput.addEventListener('change', async (e) => {
@@ -1201,6 +1200,7 @@
             showChatError('🖼️ 이미지 업로드 중...');
 
             try {
+                // 1) 'chat-images' 버킷에 업로드 (upload 함수 사용)
                 const fileExt = file.name.split('.').pop() || 'png';
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
                 const filePath = currentUserId ? `${currentUserId}/${fileName}` : `public/${fileName}`;
@@ -1218,6 +1218,7 @@
                     return;
                 }
 
+                // 2) 공개 URL 가져오기 (getPublicUrl 함수 사용)
                 const { data: publicUrlData } = client.storage
                     .from('chat-images')
                     .getPublicUrl(filePath);
@@ -1225,8 +1226,9 @@
                 if (publicUrlData && publicUrlData.publicUrl) {
                     const imageUrl = publicUrlData.publicUrl;
 
+                    // 3) 'messages' 테이블에 ![image](이미지_URL) 형식으로 행 추가
                     const insertPayload = {
-                        content: `[이미지] ${imageUrl}`,
+                        content: `![image](${imageUrl})`,
                         user_email: currentUserEmail || '익명 사용자'
                     };
                     if (currentUserId) {
@@ -1344,6 +1346,7 @@
             return DEFAULT_AVATAR_SVG;
         }
 
+        // 🖼️ 4, 5번 교재 요구사항: ![image](URL) 감지 시 <img> 태그 및 onerror 예외 처리 반영
         function appendChatMessage(msg) {
             const emptyEl = chatMessages.querySelector('.history-empty');
             if (emptyEl) emptyEl.remove();
@@ -1359,9 +1362,18 @@
             const userAvatarUrl = getUserAvatarUrlForMessage(msg.user_id);
 
             let bodyContent = escapeHtml(msg.content || '');
-            if (msg.content && msg.content.startsWith('[이미지] ')) {
+
+            // 교재 규격 ![image](이미지_URL) 또는 [이미지] URL 파싱
+            if (msg.content && msg.content.includes('![image](')) {
+                const match = msg.content.match(/!\[image\]\((.*?)\)/);
+                if (match && match[1]) {
+                    const imgUrl = match[1].trim();
+                    // 5번: 이미지가 로드되지 않을 때 onerror 예외 안전 조치
+                    bodyContent = `<img class="chat-message-img" src="${imgUrl}" alt="첨부 이미지" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=\\'color:#ef4444;font-size:12px;\\'>⚠️ 이미지를 불러올 수 없습니다</span>';" onclick="window.open('${imgUrl}', '_blank')" title="클릭하면 크게 보기">`;
+                }
+            } else if (msg.content && msg.content.startsWith('[이미지] ')) {
                 const imgUrl = msg.content.replace('[이미지] ', '').trim();
-                bodyContent = `<img class="chat-message-img" src="${imgUrl}" alt="첨부 이미지" onclick="window.open('${imgUrl}', '_blank')" title="클릭하면 크게 보기">`;
+                bodyContent = `<img class="chat-message-img" src="${imgUrl}" alt="첨부 이미지" onerror="this.onerror=null;this.parentElement.innerHTML='<span style=\\'color:#ef4444;font-size:12px;\\'>⚠️ 이미지를 불러올 수 없습니다</span>';" onclick="window.open('${imgUrl}', '_blank')" title="클릭하면 크게 보기">`;
             }
 
             const groupDiv = document.createElement('div');
