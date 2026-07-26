@@ -564,7 +564,7 @@
             margin-top: 28px;
         }
 
-        /* 👤 프로필 사진 카체 스타일 */
+        /* 👤 프로필 사진 카드 스타일 */
         .profile-card {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
@@ -685,12 +685,26 @@
             align-items: flex-start;
         }
 
+        .chat-user-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .chat-avatar-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--primary-color);
+            background-color: #f1f5f9;
+        }
+
         .chat-user-email {
             font-size: 11.5px;
             font-weight: 600;
             color: #64748b;
-            margin-bottom: 4px;
-            padding: 0 4px;
         }
 
         .chat-bubble {
@@ -893,7 +907,7 @@
                 실시간 채팅
             </h2>
 
-            <!-- 👤 프로필 사진 섹션 -->
+            <!-- 👤 프로필 사진 카드 -->
             <div class="profile-card">
                 <div class="profile-avatar-wrapper" id="avatarWrapper" title="사진 변경하려면 클릭하세요">
                     <img id="profileAvatarImg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24' fill='%2394a3b8'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="프로필 이미지" class="profile-avatar-img">
@@ -959,6 +973,7 @@
         let supabaseClient = null;
         let currentUserId = null;
         let currentUserEmail = null;
+        let currentUserAvatarUrl = null;
         let realtimeChannel = null;
 
         function showAuthMsg(msg, isError = true) {
@@ -1030,20 +1045,22 @@
                 appContainer.style.display = 'block';
                 currentUserId = session.user.id;
                 currentUserEmail = session.user.email || '익명 사용자';
+                currentUserAvatarUrl = session.user.user_metadata?.avatar_url || null;
                 userEmailText.textContent = currentUserEmail;
                 
                 fetchDiaryHistory();
                 initRealtimeChat(session);
-                loadUserProfileAvatar();
+                loadUserProfileAvatar(session);
             } else {
                 authContainer.style.display = 'block';
                 appContainer.style.display = 'none';
                 currentUserId = null;
                 currentUserEmail = null;
+                currentUserAvatarUrl = null;
             }
         }
 
-        // 👤 프로필 사진 업로드 및 불러오기 핸들러
+        // 👤 교재 요구사항 1~5번 프로필 사진 업로드 및 메타데이터 업데이트 로직
         avatarWrapper.addEventListener('click', () => profileFileInput.click());
         changeProfileBtn.addEventListener('click', () => profileFileInput.click());
 
@@ -1066,32 +1083,50 @@
             profileStatusMsg.style.color = 'var(--primary-color)';
 
             try {
-                // RLS 경로 규칙 준수: avatars/user_id/avatar.png
+                // 1) 'avatars' 버킷에 [user_id]/avatar.png 경로로 업로드 (upload 함수 사용)
                 const filePath = `${currentUserId}/avatar.png`;
 
-                const { data, error } = await client.storage
+                const { data: uploadData, error: uploadError } = await client.storage
                     .from('avatars')
                     .upload(filePath, file, {
                         cacheControl: '0',
                         upsert: true
                     });
 
-                if (error) {
-                    console.error('프로필 업로드 에러:', error.message);
-                    profileStatusMsg.textContent = '업로드 실패: ' + error.message;
+                if (uploadError) {
+                    console.error('프로필 업로드 에러:', uploadError.message);
+                    profileStatusMsg.textContent = '업로드 실패: ' + uploadError.message;
                     profileStatusMsg.style.color = '#ef4444';
                     return;
                 }
 
+                // 2) 업로드 성공 후 공개 URL 가져오기 (getPublicUrl 함수 사용)
                 const { data: publicUrlData } = client.storage
                     .from('avatars')
                     .getPublicUrl(filePath);
 
                 if (publicUrlData && publicUrlData.publicUrl) {
-                    const avatarUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
-                    profileAvatarImg.src = avatarUrl;
-                    profileStatusMsg.textContent = '🎉 프로필 사진이 업데이트되었습니다!';
+                    const rawPublicUrl = publicUrlData.publicUrl;
+                    const cacheBustedUrl = `${rawPublicUrl}?t=${Date.now()}`;
+
+                    // 3) Supabase Auth 사용자 메타데이터에 avatar_url 저장 (updateUser 함수 사용)
+                    const { error: metaError } = await client.auth.updateUser({
+                        data: { avatar_url: rawPublicUrl }
+                    });
+
+                    if (metaError) {
+                        console.warn('사용자 메타데이터 업데이트 경고:', metaError.message);
+                    } else {
+                        currentUserAvatarUrl = rawPublicUrl;
+                    }
+
+                    // 4) 상단 프로필 이미지 즉시 새 사진으로 변경
+                    profileAvatarImg.src = cacheBustedUrl;
+                    profileStatusMsg.textContent = '🎉 프로필 사진이 스토리지 & 사용자 정보에 업데이트되었습니다!';
                     profileStatusMsg.style.color = '#16a34a';
+
+                    // 5) 채팅 화면의 사용자 프로필 아바타도 즉시 갱신
+                    refreshAllChatAvatars();
                 }
             } catch (err) {
                 console.error('프로필 업로드 예외:', err.message);
@@ -1100,8 +1135,17 @@
             }
         });
 
-        async function loadUserProfileAvatar() {
+        async function loadUserProfileAvatar(session) {
             if (!currentUserId) return;
+
+            // 1순위: Supabase Auth user_metadata 에 저장된 avatar_url
+            if (session?.user?.user_metadata?.avatar_url) {
+                const metaUrl = `${session.user.user_metadata.avatar_url}?t=${Date.now()}`;
+                profileAvatarImg.src = metaUrl;
+                return;
+            }
+
+            // 2순위: Storage avatars 버킷의 getPublicUrl 경로
             const client = await getOrCreateSupabaseClient();
             if (!client) return;
 
@@ -1112,14 +1156,10 @@
                     .getPublicUrl(filePath);
 
                 if (publicUrlData && publicUrlData.publicUrl) {
-                    const testImg = new Image();
                     const avatarUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
-                    testImg.onload = () => {
-                        profileAvatarImg.src = avatarUrl;
-                    };
-                    testImg.onerror = () => {
-                        profileAvatarImg.src = DEFAULT_AVATAR_SVG;
-                    };
+                    const testImg = new Image();
+                    testImg.onload = () => { profileAvatarImg.src = avatarUrl; };
+                    testImg.onerror = () => { profileAvatarImg.src = DEFAULT_AVATAR_SVG; };
                     testImg.src = avatarUrl;
                 }
             } catch (e) {
@@ -1177,6 +1217,20 @@
             }
         }
 
+        function getUserAvatarUrlForMessage(msgUserId) {
+            if (!msgUserId) return DEFAULT_AVATAR_SVG;
+            if (msgUserId === currentUserId && currentUserAvatarUrl) {
+                return `${currentUserAvatarUrl}?t=${Date.now()}`;
+            }
+            if (supabaseClient) {
+                const { data } = supabaseClient.storage.from('avatars').getPublicUrl(`${msgUserId}/avatar.png`);
+                if (data && data.publicUrl) {
+                    return `${data.publicUrl}?t=${Date.now()}`;
+                }
+            }
+            return DEFAULT_AVATAR_SVG;
+        }
+
         function appendChatMessage(msg) {
             const emptyEl = chatMessages.querySelector('.history-empty');
             if (emptyEl) emptyEl.remove();
@@ -1189,18 +1243,32 @@
             const groupClass = isMine ? 'mine' : 'others';
             const formattedTime = formatChatTime(msg.created_at);
 
+            const userAvatarUrl = getUserAvatarUrlForMessage(msg.user_id);
+
             const groupDiv = document.createElement('div');
             groupDiv.className = `chat-bubble-group ${groupClass}`;
             if (msg.id) groupDiv.id = `msg-${msg.id}`;
 
             groupDiv.innerHTML = `
-                <div class="chat-user-email">${escapeHtml(msg.user_email || '익명')}</div>
+                <div class="chat-user-header">
+                    <img class="chat-avatar-thumb" src="${userAvatarUrl}" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR_SVG}';" alt="아바타">
+                    <span class="chat-user-email">${escapeHtml(msg.user_email || '익명')}</span>
+                </div>
                 <div class="chat-bubble">${escapeHtml(msg.content || '')}</div>
                 <div class="chat-time">${formattedTime}</div>
             `;
 
             chatMessages.appendChild(groupDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function refreshAllChatAvatars() {
+            if (!currentUserId) return;
+            const myAvatarThumbs = chatMessages.querySelectorAll('.chat-bubble-group.mine .chat-avatar-thumb');
+            const newUrl = getUserAvatarUrlForMessage(currentUserId);
+            myAvatarThumbs.forEach(img => {
+                img.src = newUrl;
+            });
         }
 
         function formatChatTime(dateString) {
