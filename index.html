@@ -527,7 +527,6 @@
             font-weight: 600;
         }
 
-        /* 🗑️ 일기 삭제 버튼 스타일 */
         .btn-delete-diary {
             background-color: #fef2f2;
             color: #ef4444;
@@ -735,6 +734,36 @@
             color: #64748b;
         }
 
+        /* 💬 채팅 메시지 감싸는 래퍼 & 🗑️ 채팅 삭제 버튼 스타일 */
+        .chat-bubble-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-delete-chat {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 12.5px;
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 6px;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-delete-chat:hover {
+            opacity: 1;
+            color: #ef4444;
+            background-color: #fef2f2;
+            transform: scale(1.1);
+        }
+
         .chat-bubble {
             padding: 10px 16px;
             border-radius: 16px;
@@ -745,7 +774,6 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
         }
 
-        /* 🖼️ 이미지 말풍선 슬림 프레임 스타일 */
         .chat-bubble.has-image-bubble {
             padding: 4px !important;
             background: #ffffff !important;
@@ -1322,6 +1350,7 @@
                 client.removeChannel(realtimeChannel);
             }
 
+            // ⚡ 실시간 생성(INSERT) 및 삭제(DELETE) 이벤트 전파 구독
             realtimeChannel = client
                 .channel('messages')
                 .on(
@@ -1329,6 +1358,15 @@
                     { event: 'INSERT', schema: 'public', table: 'messages' },
                     (payload) => {
                         appendChatMessage(payload.new);
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'DELETE', schema: 'public', table: 'messages' },
+                    (payload) => {
+                        if (payload.old && payload.old.id) {
+                            removeChatMessageFromDOM(payload.old.id);
+                        }
                     }
                 )
                 .subscribe((status) => {
@@ -1412,17 +1450,100 @@
 
             const bubbleClass = isImageMsg ? 'chat-bubble has-image-bubble' : 'chat-bubble';
 
+            const rawContentEscaped = (msg.content || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+            const deleteButtonHtml = isMine ? `
+                <button type="button" class="btn-delete-chat" onclick="deleteChatMessage('${msg.id}', '${rawContentEscaped}')" title="메시지 및 이미지 삭제">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            ` : '';
+
             groupDiv.innerHTML = `
                 <div class="chat-user-header">
                     <img class="chat-avatar-thumb" src="${userAvatarUrl}" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR_SVG}';" alt="아바타">
                     <span class="chat-user-email">${escapeHtml(msg.user_email || '익명')}</span>
                 </div>
-                <div class="${bubbleClass}">${bodyContent}</div>
+                <div class="chat-bubble-wrapper">
+                    ${isMine ? deleteButtonHtml : ''}
+                    <div class="${bubbleClass}">${bodyContent}</div>
+                    ${!isMine ? deleteButtonHtml : ''}
+                </div>
                 <div class="chat-time">${formattedTime}</div>
             `;
 
             chatMessages.appendChild(groupDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeChatMessageFromDOM(msgId) {
+            const el = document.getElementById(`msg-${msgId}`);
+            if (el) {
+                el.style.transition = 'all 0.25s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    el.remove();
+                    if (!chatMessages.querySelector('.chat-bubble-group')) {
+                        chatMessages.innerHTML = '<div class="history-empty">아직 보낸 실시간 메시지가 없습니다.<br>첫 메시지를 입력해 보세요! 💬</div>';
+                    }
+                }, 250);
+            }
+        }
+
+        // 🗑️ 채팅 메시지 & 첨부 파일(Supabase Storage) 영구 삭제 함수
+        async function deleteChatMessage(msgId, rawContent) {
+            if (!msgId) return;
+            if (!confirm('이 채팅 메시지(및 첨부 사진)를 삭제하시겠습니까?')) return;
+
+            const client = await getOrCreateSupabaseClient();
+            if (!client) return;
+
+            try {
+                // 1) 만약 첨부 이미지 메시지라면 Supabase Storage 'chat-images' 버킷에서도 파일 삭제
+                if (rawContent && (rawContent.includes('![image](') || rawContent.startsWith('[이미지] '))) {
+                    let imgUrl = '';
+                    if (rawContent.includes('![image](')) {
+                        const m = rawContent.match(/!\[image\]\((.*?)\)/);
+                        if (m && m[1]) imgUrl = m[1].trim();
+                    } else {
+                        imgUrl = rawContent.replace('[이미지] ', '').trim();
+                    }
+
+                    if (imgUrl && imgUrl.includes('/chat-images/')) {
+                        const marker = '/chat-images/';
+                        const idx = imgUrl.indexOf(marker);
+                        if (idx !== -1) {
+                            let storagePath = decodeURIComponent(imgUrl.substring(idx + marker.length));
+                            if (storagePath.includes('?')) {
+                                storagePath = storagePath.split('?')[0];
+                            }
+                            console.log('[Supabase Storage 이미지 영구 삭제]:', storagePath);
+                            const { error: storageErr } = await client.storage
+                                .from('chat-images')
+                                .remove([storagePath]);
+                            if (storageErr) {
+                                console.warn('[Storage 이미지 삭제 경고]:', storageErr.message);
+                            }
+                        }
+                    }
+                }
+
+                // 2) Supabase messages 테이블에서 데이터 행 삭제
+                const { error: deleteErr } = await client
+                    .from('messages')
+                    .delete()
+                    .eq('id', msgId);
+
+                if (deleteErr) {
+                    console.error('메시지 삭제 오류:', deleteErr.message);
+                    showChatError('메시지 삭제 실패: ' + deleteErr.message);
+                } else {
+                    removeChatMessageFromDOM(msgId);
+                }
+            } catch (err) {
+                console.error('메시지 삭제 예외:', err.message);
+                showChatError('삭제 예외 발생: ' + err.message);
+            }
         }
 
         function refreshAllChatAvatars() {
