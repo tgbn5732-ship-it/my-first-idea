@@ -1,5 +1,6 @@
 // Vercel Serverless Function: api/history.js
-// Serverless Redis(REDIS_URL)에 저장된 일기 데이터 중 요청한 사용자(userId)의 일기만 최신순으로 정렬하여 반환합니다.
+// Serverless Redis(REDIS_URL)에 저장된 일기 데이터 중 요청한 사용자(userId/userEmail)의 일기만 최신순으로 정렬하여 반환합니다.
+// 과거에 등록된 초기 데이터도 계정 주인(tgbn5732@gmail.com)에게 안전하게 복원합니다.
 
 import Redis from 'ioredis';
 
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
 
     try {
         const reqUserId = req.query.userId || req.query.user_id || null;
+        const reqUserEmail = req.query.userEmail || req.query.user_email || null;
 
         const redis = getRedisClient();
         if (!redis) {
@@ -84,14 +86,24 @@ export default async function handler(req, res) {
             })
             .filter(item => item && (item.diary || item.result));
 
-        // 🔒 사용자 ID 필터링: userId가 요청에 포함되어 있다면 해당 사용자의 일기만 추출
-        if (reqUserId) {
+        // 🔒 사용자 ID & 이메일 필터링 (과거 데이터 안전 복원 적용)
+        if (reqUserId || reqUserEmail) {
             items = items.filter(item => {
-                // 일기 레코드에 userId가 있으면 일치하는지 검사
+                // 1) 레코드에 userId가 기록되어 있다면 사용자 ID 일치 검사
                 if (item.userId) {
                     return item.userId === reqUserId;
                 }
-                // 기존 레코드에 userId가 없는 초기 데이터는 기존 제작자 계정에만 보여주고 다른 사람에게는 비노출
+                // 2) 레코드에 userEmail이 기록되어 있다면 이메일 일치 검사
+                if (item.userEmail && reqUserEmail) {
+                    return item.userEmail.toLowerCase() === reqUserEmail.toLowerCase();
+                }
+                // 3) 과거 작성된 초기 데이터(userId/userEmail 미기재 레코드)는 제작자 본인 계정(tgbn5732@gmail.com)에 연결하여 복원
+                if (!item.userId && !item.userEmail) {
+                    if (reqUserEmail && reqUserEmail.toLowerCase().includes('tgbn5732')) {
+                        return true;
+                    }
+                    return false;
+                }
                 return false;
             });
         }

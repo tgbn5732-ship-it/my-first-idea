@@ -1632,9 +1632,10 @@
 
         // 🔒 2. 사용자 개별 히스토리 조회 (userId 필터링) & 🗑️ 3. 개별 일기 삭제 기능
         async function fetchDiaryHistory() {
-            if (!currentUserId) return;
+            if (!currentUserId && !currentUserEmail) return;
             try {
-                const response = await fetch(`/api/history?userId=${encodeURIComponent(currentUserId)}`);
+                const url = `/api/history?userId=${encodeURIComponent(currentUserId || '')}&userEmail=${encodeURIComponent(currentUserEmail || '')}`;
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('히스토리를 불러올 수 없습니다.');
                 const data = await response.json();
                 const items = data.items || [];
