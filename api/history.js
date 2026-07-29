@@ -1,5 +1,5 @@
 // Vercel Serverless Function: api/history.js
-// Serverless Redis(REDIS_URL)에 저장된 모든 'diary-*' 일기 데이터를 가져와 최신순으로 정렬하여 반환합니다.
+// Serverless Redis(REDIS_URL)에 저장된 일기 데이터 중 요청한 사용자(userId)의 일기만 최신순으로 정렬하여 반환합니다.
 
 import Redis from 'ioredis';
 
@@ -42,6 +42,8 @@ export default async function handler(req, res) {
     }
 
     try {
+        const reqUserId = req.query.userId || req.query.user_id || null;
+
         const redis = getRedisClient();
         if (!redis) {
             console.log('REDIS_URL이 설정되지 않아 빈 히스토리 배열을 반환합니다.');
@@ -55,7 +57,7 @@ export default async function handler(req, res) {
         // 'diary-*' 패턴 검색
         const stream = redis.scanStream({
             match: 'diary-*',
-            count: 100
+            count: 200
         });
 
         const keys = [];
@@ -71,7 +73,7 @@ export default async function handler(req, res) {
 
         const values = await redis.mget(...keys);
         
-        const items = values
+        let items = values
             .filter(v => Boolean(v))
             .map(v => {
                 try {
@@ -81,6 +83,18 @@ export default async function handler(req, res) {
                 }
             })
             .filter(item => item && (item.diary || item.result));
+
+        // 🔒 사용자 ID 필터링: userId가 요청에 포함되어 있다면 해당 사용자의 일기만 추출
+        if (reqUserId) {
+            items = items.filter(item => {
+                // 일기 레코드에 userId가 있으면 일치하는지 검사
+                if (item.userId) {
+                    return item.userId === reqUserId;
+                }
+                // 기존 레코드에 userId가 없는 초기 데이터는 기존 제작자 계정에만 보여주고 다른 사람에게는 비노출
+                return false;
+            });
+        }
 
         // 최신순 정렬 (내림차순)
         items.sort((a, b) => {

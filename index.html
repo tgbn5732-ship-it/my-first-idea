@@ -512,6 +512,12 @@
             color: #64748b;
         }
 
+        .history-card-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .history-card-badge {
             background-color: #eef2ff;
             color: var(--primary-color);
@@ -519,6 +525,28 @@
             border-radius: 6px;
             font-size: 12px;
             font-weight: 600;
+        }
+
+        /* 🗑️ 일기 삭제 버튼 스타일 */
+        .btn-delete-diary {
+            background-color: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete-diary:hover {
+            background-color: #fee2e2;
+            border-color: #f87171;
+            transform: translateY(-1px);
         }
 
         .history-card-diary-title {
@@ -564,7 +592,7 @@
             margin-top: 28px;
         }
 
-        /* 👤 프로필 사진 카드 스타일 (테두리 두께 최적화) */
+        /* 👤 프로필 사진 카드 스타일 */
         .profile-card {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
@@ -1602,9 +1630,11 @@
             }
         }
 
+        // 🔒 2. 사용자 개별 히스토리 조회 (userId 필터링) & 🗑️ 3. 개별 일기 삭제 기능
         async function fetchDiaryHistory() {
+            if (!currentUserId) return;
             try {
-                const response = await fetch('/api/history');
+                const response = await fetch(`/api/history?userId=${encodeURIComponent(currentUserId)}`);
                 if (!response.ok) throw new Error('히스토리를 불러올 수 없습니다.');
                 const data = await response.json();
                 const items = data.items || [];
@@ -1616,11 +1646,18 @@
 
                 historyList.innerHTML = items.map(item => {
                     const formattedTime = formatDate(item.createdAt, item.id);
+                    const safeId = escapeHtml(item.id || '');
                     return `
-                        <div class="history-card">
+                        <div class="history-card" id="card-${safeId}">
                             <div class="history-card-header">
                                 <span class="history-card-date">📅 ${formattedTime}</span>
-                                <span class="history-card-badge">Serverless Redis</span>
+                                <div class="history-card-right">
+                                    <span class="history-card-badge">Serverless Redis</span>
+                                    <button type="button" class="btn-delete-diary" onclick="deleteDiaryRecord('${safeId}')" title="이 일기 삭제하기">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                        삭제
+                                    </button>
+                                </div>
                             </div>
                             <div class="history-card-body">
                                 <div class="history-card-diary-title">📖 일기 내용</div>
@@ -1632,6 +1669,37 @@
                 }).join('');
             } catch (error) {
                 historyList.innerHTML = '<div class="history-empty">클라우드 히스토리를 가져오는 데 실패했습니다.</div>';
+            }
+        }
+
+        async function deleteDiaryRecord(key) {
+            if (!key) return;
+            if (!confirm('작성하신 일기를 삭제하시겠습니까? 삭제된 일기는 복구할 수 없습니다.')) return;
+
+            try {
+                const url = `/api/delete?key=${encodeURIComponent(key)}&userId=${encodeURIComponent(currentUserId || '')}`;
+                const res = await fetch(url, { method: 'DELETE' });
+                if (res.ok) {
+                    const cardEl = document.getElementById(`card-${key}`);
+                    if (cardEl) {
+                        cardEl.style.transition = 'all 0.3s ease';
+                        cardEl.style.opacity = '0';
+                        cardEl.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            cardEl.remove();
+                            if (!historyList.querySelector('.history-card')) {
+                                historyList.innerHTML = '<div class="history-empty">아직 저장된 일기 히스토리가 없습니다.<br>오늘의 첫 일기를 작성해 보세요! 📝</div>';
+                            }
+                        }, 300);
+                    } else {
+                        fetchDiaryHistory();
+                    }
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    alert('일기 삭제 실패: ' + (errData.error || '알 수 없는 오류'));
+                }
+            } catch (e) {
+                alert('일기 삭제 중 오류 발생: ' + e.message);
             }
         }
 
@@ -1699,7 +1767,11 @@
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ diary: diaryContent })
+                body: JSON.stringify({ 
+                    diary: diaryContent,
+                    userId: currentUserId,
+                    userEmail: currentUserEmail
+                })
             });
 
             if (!response.ok) {

@@ -1,5 +1,5 @@
 // Vercel Serverless Function: api/analyze.js
-// 사용자의 일기 내용을 100% 밀착 공감하는 Gemini AI로 분석하며, 예시 환각(Hallucination) 및 하드코딩 문구를 철저히 방지합니다.
+// 사용자의 일기 내용을 100% 밀착 공감하는 Gemini AI로 분석하며, 사용자 ID(userId)를 포함해 Serverless Redis DB에 저장합니다.
 
 import Redis from 'ioredis';
 
@@ -87,6 +87,8 @@ export default async function handler(req, res) {
         }
         
         const diary = bodyData?.diary || bodyData?.diaryContent;
+        const userId = bodyData?.userId || bodyData?.user_id || null;
+        const userEmail = bodyData?.userEmail || bodyData?.user_email || null;
 
         if (!diary || diary.trim() === '') {
             return res.status(400).json({ error: '분석할 일기 내용을 입력해 주세요.' });
@@ -94,7 +96,6 @@ export default async function handler(req, res) {
 
         const apiKey = process.env.GEMINI_API_KEY;
 
-        // 🎯 프롬프트에 특정 에피소드 예시(텃밭, 34도 등)를 절대 넣지 않아서 AI 환각을 완전히 차단합니다.
         const prompt = `너는 타인의 마음 깊은 곳을 섬세하게 읽어내고 진정성 있는 통찰을 전하는 세련된 수석 심리상담가야.
 아래 사용자가 적은 일기를 정밀하게 읽고, 오직 사용자가 직접 작성한 내용에만 기반하여 맞춤형 상담 답변을 작성해줘.
 
@@ -154,6 +155,8 @@ export default async function handler(req, res) {
         const diaryKey = generateDiaryKey();
         const recordData = {
             id: diaryKey,
+            userId: userId,
+            userEmail: userEmail,
             diary: diary.trim(),
             result: finalReply,
             createdAt: new Date().toISOString()
@@ -166,7 +169,7 @@ export default async function handler(req, res) {
                     await redis.connect();
                 }
                 await redis.set(diaryKey, JSON.stringify(recordData));
-                console.log(`[Serverless Redis DB 저장 성공] Key: ${diaryKey}`);
+                console.log(`[Serverless Redis DB 저장 성공] Key: ${diaryKey}, UserID: ${userId}`);
             }
         } catch (dbError) {
             console.error('[Serverless Redis DB 저장 예외]:', dbError.message);
