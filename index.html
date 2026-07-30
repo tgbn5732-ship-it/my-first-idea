@@ -734,7 +734,7 @@
             color: #64748b;
         }
 
-        /* 💬 채팅 메시지 감싸는 래퍼 & 🗑️ 채팅 삭제 버튼 스타일 */
+        /* 💬 선명하고 명확한 🗑️ 채팅 삭제 버튼 스타일 */
         .chat-bubble-wrapper {
             position: relative;
             display: flex;
@@ -743,25 +743,25 @@
         }
 
         .btn-delete-chat {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 12.5px;
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #ef4444;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
-            padding: 3px 6px;
+            padding: 2px 7px;
             border-radius: 6px;
-            opacity: 0.7;
             transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
+            gap: 3px;
+            white-space: nowrap;
         }
 
         .btn-delete-chat:hover {
-            opacity: 1;
-            color: #ef4444;
-            background-color: #fef2f2;
-            transform: scale(1.1);
+            background-color: #fee2e2;
+            border-color: #f87171;
+            transform: scale(1.05);
         }
 
         .chat-bubble {
@@ -1350,7 +1350,6 @@
                 client.removeChannel(realtimeChannel);
             }
 
-            // ⚡ 실시간 생성(INSERT) 및 삭제(DELETE) 이벤트 전파 구독
             realtimeChannel = client
                 .channel('messages')
                 .on(
@@ -1422,7 +1421,11 @@
                 return;
             }
 
-            const isMine = (currentUserId && msg.user_id === currentUserId) || (currentUserEmail && msg.user_email === currentUserEmail);
+            const isMine = (currentUserId && msg.user_id === currentUserId) || 
+                           (currentUserEmail && msg.user_email && msg.user_email.toLowerCase() === currentUserEmail.toLowerCase());
+            const isOwner = currentUserEmail && currentUserEmail.toLowerCase().includes('tgbn5732');
+            const canDelete = isMine || isOwner;
+
             const groupClass = isMine ? 'mine' : 'others';
             const formattedTime = formatChatTime(msg.created_at);
 
@@ -1452,9 +1455,9 @@
 
             const rawContentEscaped = (msg.content || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
-            const deleteButtonHtml = isMine ? `
-                <button type="button" class="btn-delete-chat" onclick="deleteChatMessage('${msg.id}', '${rawContentEscaped}')" title="메시지 및 이미지 삭제">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            const deleteBtnHtml = canDelete ? `
+                <button type="button" class="btn-delete-chat" onclick="deleteChatMessage('${msg.id}', '${rawContentEscaped}')" title="이 메시지/사진 삭제">
+                    🗑️ 삭제
                 </button>
             ` : '';
 
@@ -1462,11 +1465,10 @@
                 <div class="chat-user-header">
                     <img class="chat-avatar-thumb" src="${userAvatarUrl}" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR_SVG}';" alt="아바타">
                     <span class="chat-user-email">${escapeHtml(msg.user_email || '익명')}</span>
+                    ${deleteBtnHtml}
                 </div>
                 <div class="chat-bubble-wrapper">
-                    ${isMine ? deleteButtonHtml : ''}
                     <div class="${bubbleClass}">${bodyContent}</div>
-                    ${!isMine ? deleteButtonHtml : ''}
                 </div>
                 <div class="chat-time">${formattedTime}</div>
             `;
@@ -1490,7 +1492,6 @@
             }
         }
 
-        // 🗑️ 채팅 메시지 & 첨부 파일(Supabase Storage) 영구 삭제 함수
         async function deleteChatMessage(msgId, rawContent) {
             if (!msgId) return;
             if (!confirm('이 채팅 메시지(및 첨부 사진)를 삭제하시겠습니까?')) return;
@@ -1499,7 +1500,6 @@
             if (!client) return;
 
             try {
-                // 1) 만약 첨부 이미지 메시지라면 Supabase Storage 'chat-images' 버킷에서도 파일 삭제
                 if (rawContent && (rawContent.includes('![image](') || rawContent.startsWith('[이미지] '))) {
                     let imgUrl = '';
                     if (rawContent.includes('![image](')) {
@@ -1528,7 +1528,6 @@
                     }
                 }
 
-                // 2) Supabase messages 테이블에서 데이터 행 삭제
                 const { error: deleteErr } = await client
                     .from('messages')
                     .delete()
